@@ -166,11 +166,11 @@ internal fun ChatCustomizationSection() {
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .background(Color.Black.copy(alpha = 0.32f)),
+                            .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.32f)),
                 )
                 Text(
                     text = stringResource(R.string.settings_chat_background_active),
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onScrim,
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                     modifier =
                         Modifier
@@ -298,9 +298,9 @@ private fun BubbleColorSwatches(
                             contentDescription = label,
                             tint =
                                 if (swatchColor?.let { it.luminance() > 0.5f } == true) {
-                                    Color.Black
+                                    Color(red = 0f, green = 0f, blue = 0f)
                                 } else {
-                                    Color.White
+                                    Color(red = 1f, green = 1f, blue = 1f)
                                 },
                             modifier = Modifier.size(20.dp),
                         )

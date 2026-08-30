@@ -65,7 +65,7 @@ fun GlassSurface(
                             Brush.linearGradient(
                                 colors =
                                     listOf(
-                                        Color.White.copy(alpha = highlightAlpha),
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = highlightAlpha),
                                         Color.Transparent,
                                     ),
                                 start = Offset.Zero,
@@ -76,7 +76,7 @@ fun GlassSurface(
                     )
                 }.border(
                     width = 1.dp,
-                    color = Color.White.copy(alpha = borderAlpha),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = borderAlpha),
                     shape = RoundedCornerShape(cornerRadius),
                 ),
     ) {
@@ -110,7 +110,7 @@ fun GlassBubble(
                             Brush.linearGradient(
                                 colors =
                                     listOf(
-                                        Color.White.copy(alpha = 0.14f),
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f),
                                         Color.Transparent,
                                     ),
                                 start = Offset.Zero,
@@ -120,7 +120,7 @@ fun GlassBubble(
                         size = Size(size.toPx(), size.toPx()),
                     )
                     drawRoundRect(
-                        color = Color.White.copy(alpha = 0.20f),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.20f),
                         cornerRadius = CornerRadius(cr, cr),
                         style = Stroke(width = 1.dp.toPx()),
                     )

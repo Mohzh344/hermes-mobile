@@ -56,7 +56,7 @@ fun ChatBackground(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .background(Color.Black.copy(alpha = scrimAlpha)),
+                        .background(MaterialTheme.colorScheme.scrim.copy(alpha = scrimAlpha)),
             )
         }
 
@@ -70,10 +70,10 @@ fun ChatBackground(
                         Brush.verticalGradient(
                             colors =
                                 listOf(
-                                    Color.Black.copy(alpha = 0.10f),
+                                    MaterialTheme.colorScheme.scrim.copy(alpha = 0.10f),
                                     Color.Transparent,
                                     Color.Transparent,
-                                    Color.Black.copy(alpha = 0.06f),
+                                    MaterialTheme.colorScheme.scrim.copy(alpha = 0.06f),
                                 ),
                         ),
                     ),
