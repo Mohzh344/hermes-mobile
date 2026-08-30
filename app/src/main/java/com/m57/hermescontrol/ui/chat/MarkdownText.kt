@@ -33,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
@@ -44,7 +45,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hrm.latex.renderer.LatexAutoWrap
@@ -65,6 +68,37 @@ private val TASK_LINE_RE = Regex("""^(\s*)[-*+]\s+\[([ xX])\]\s+(.*)$""")
 private val BULLET_LINE_RE = Regex("""^(\s*)[-*+]\s+(.*)$""")
 private val ORDERED_LINE_RE = Regex("""^(\s*)(\d+)\.\s+(.*)$""")
 private val LIST_ITEM_LINE_RE = Regex("""^(\s*)(?:[-*+]\s+(?:\[([ xX])\]\s+)?|(\d+)\.\s+)(.*)$""")
+
+/**
+ * Detects whether a string is predominantly RTL (Arabic, Hebrew, Persian, Urdu, etc.)
+ * by scanning for characters in RTL Unicode ranges. Returns true when more than 30%
+ * of letter characters are RTL — the threshold is intentionally low so mixed content
+ * (Arabic text with English code keywords) still gets RTL treatment.
+ */
+internal fun isRtlText(text: String): Boolean {
+    if (text.isBlank()) return false
+    var rtlCount = 0
+    var letterCount = 0
+    for (ch in text) {
+        if (!ch.isLetter()) continue
+        letterCount++
+        val code = ch.code
+        // Arabic (0600–06FF), Arabic Supplement (0750–077F), Arabic Extended-A (08A0–08FF),
+        // Arabic Presentation Forms-A (FB50–FDFF), Arabic Presentation Forms-B (FE70–FEFF),
+        // Hebrew (0590–05FF), Syriac (0700–074F), Thaana (0780–07BF), NKo (07C0–07FF)
+        if (code in 0x0590..0x08FF || code in 0x0750..0x077F ||
+            code in 0xFB50..0xFDFF || code in 0xFE70..0xFEFF ||
+            code in 0x0780..0x07FF
+        ) {
+            rtlCount++
+        }
+    }
+    return letterCount > 0 && rtlCount.toFloat() / letterCount > 0.3f
+}
+
+/** Resolves layout direction for a block of text: RTL when Arabic-dominant, LTR otherwise. */
+private fun resolveDirection(text: String): LayoutDirection =
+    if (isRtlText(text)) LayoutDirection.Rtl else LayoutDirection.Ltr
 
 /**
  * Renders chat assistant text as Markdown — but ONLY once the message has finished streaming.
@@ -99,9 +133,17 @@ fun MarkdownText(
     }
 
     val linkColor = MaterialTheme.colorScheme.primary
+    val headingColor = MaterialTheme.colorScheme.primary
+    val quoteAccentColor = MaterialTheme.colorScheme.tertiary
+    val quoteTextColor = MaterialTheme.colorScheme.onSurfaceVariant
     val blocks = remember(text) { parseBlocks(text) }
     val latexMeasurer = rememberLatexMeasurer()
+    val overallRtl = remember(text) { isRtlText(text) }
+    val layoutDir = if (overallRtl) LayoutDirection.Rtl else LayoutDirection.Ltr
 
+    androidx.compose.runtime.CompositionLocalProvider(
+        LocalLayoutDirection provides layoutDir,
+    ) {
     Column(modifier = modifier.fillMaxWidth()) {
         for (block in blocks) {
             when (block) {
@@ -136,161 +178,225 @@ fun MarkdownText(
                 is MdBlock.Heading -> {
                     val fontSize =
                         when (block.level) {
-                            1 -> 22.sp
-                            2 -> 20.sp
+                            1 -> 24.sp
+                            2 -> 21.sp
                             3 -> 18.sp
                             4 -> 16.sp
                             5 -> 15.sp
                             else -> 14.sp
                         }
-                    MarkdownInlineText(
-                        text = block.text,
-                        textColor = textColor,
-                        latexMeasurer = latexMeasurer,
-                        style =
-                            MaterialTheme.typography.bodyMedium
-                                .copy(fontSize = fontSize, fontWeight = FontWeight.Bold),
-                        searchQuery = searchQuery,
-                        isCurrentMatch = isCurrentMatch,
-                        linkColor = linkColor,
-                        highlights = highlights,
-                        modifier = Modifier.padding(vertical = 2.dp),
-                    )
+                    val headingDir = resolveDirection(block.text)
+                    val topPad = if (block.level <= 2) 12.dp else 8.dp
+                    val bottomPad = if (block.level <= 2) 6.dp else 4.dp
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(top = topPad, bottom = bottomPad),
+                    ) {
+                        androidx.compose.runtime.CompositionLocalProvider(
+                            LocalLayoutDirection provides headingDir,
+                        ) {
+                            MarkdownInlineText(
+                                text = block.text,
+                                textColor = if (block.level <= 2) headingColor else textColor,
+                                latexMeasurer = latexMeasurer,
+                                style =
+                                    MaterialTheme.typography.bodyMedium
+                                        .copy(
+                                            fontSize = fontSize,
+                                            fontWeight = FontWeight.Bold,
+                                            letterSpacing = if (block.level <= 2) (-0.3).sp else 0.sp,
+                                            textDirection = TextDirection.Content,
+                                        ),
+                                searchQuery = searchQuery,
+                                isCurrentMatch = isCurrentMatch,
+                                linkColor = linkColor,
+                                highlights = highlights,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                        if (block.level <= 2) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            HorizontalDivider(
+                                color = headingColor.copy(alpha = 0.2f),
+                                thickness = if (block.level == 1) 1.5.dp else 1.dp,
+                            )
+                        }
+                    }
                 }
 
                 is MdBlock.Bullet -> {
                     val indent = (block.level * 16).dp
-                    Row(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(start = indent)
-                                .padding(vertical = 1.dp),
-                        verticalAlignment = Alignment.Top,
+                    val bulletDir = resolveDirection(block.text)
+                    val bulletColors = listOf(
+                        MaterialTheme.colorScheme.primary,
+                        MaterialTheme.colorScheme.tertiary,
+                        MaterialTheme.colorScheme.secondary,
+                    )
+                    val bulletColor = bulletColors[block.level % bulletColors.size]
+                    androidx.compose.runtime.CompositionLocalProvider(
+                        LocalLayoutDirection provides bulletDir,
                     ) {
-                        val bulletChar =
-                            when (block.level % 3) {
-                                0 -> "•"
-                                1 -> "◦"
-                                else -> "▪"
-                            }
-                        Text(
-                            text = bulletChar,
-                            color = textColor,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(end = 6.dp),
-                        )
-                        MarkdownInlineText(
-                            text = block.text,
-                            textColor = textColor,
-                            latexMeasurer = latexMeasurer,
-                            style = MaterialTheme.typography.bodyMedium,
-                            searchQuery = searchQuery,
-                            isCurrentMatch = isCurrentMatch,
-                            linkColor = linkColor,
-                            highlights = highlights,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                }
-
-                is MdBlock.Task -> {
-                    val indent = (block.level * 16).dp
-                    Row(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(start = indent)
-                                .padding(vertical = 1.dp),
-                        verticalAlignment = Alignment.Top,
-                    ) {
-                        Icon(
-                            imageVector =
-                                if (block.checked) {
-                                    Icons.Outlined.CheckBox
-                                } else {
-                                    Icons.Outlined.CheckBoxOutlineBlank
-                                },
-                            contentDescription = null,
-                            tint =
-                                if (block.checked) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    textColor.copy(
-                                        alpha = 0.6f,
+                        Row(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(
+                                        start = indent,
                                     )
-                                },
-                            modifier = Modifier.size(18.dp).padding(top = 1.dp, end = 6.dp),
-                        )
-                        MarkdownInlineText(
-                            text = block.text,
-                            textColor = textColor,
-                            latexMeasurer = latexMeasurer,
-                            style = MaterialTheme.typography.bodyMedium,
-                            searchQuery = searchQuery,
-                            isCurrentMatch = isCurrentMatch,
-                            linkColor = linkColor,
-                            highlights = highlights,
-                            modifier = Modifier.weight(1f),
-                        )
+                                    .padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.Top,
+                        ) {
+                            val bulletChar =
+                                when (block.level % 3) {
+                                    0 -> "●"
+                                    1 -> "○"
+                                    else -> "■"
+                                }
+                            Text(
+                                text = bulletChar,
+                                color = bulletColor,
+                                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 10.sp),
+                                modifier = Modifier.padding(end = 8.dp, top = 4.dp),
+                            )
+                            MarkdownInlineText(
+                                text = block.text,
+                                textColor = textColor,
+                                latexMeasurer = latexMeasurer,
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    textDirection = TextDirection.Content,
+                                ),
+                                searchQuery = searchQuery,
+                                isCurrentMatch = isCurrentMatch,
+                                linkColor = linkColor,
+                                highlights = highlights,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
                     }
                 }
 
                 is MdBlock.Ordered -> {
                     val indent = (block.level * 16).dp
-                    Row(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(start = indent)
-                                .padding(vertical = 1.dp),
-                        verticalAlignment = Alignment.Top,
+                    val orderedDir = resolveDirection(block.text)
+                    androidx.compose.runtime.CompositionLocalProvider(
+                        LocalLayoutDirection provides orderedDir,
                     ) {
-                        Text(
-                            text = "${block.index}.",
-                            color = textColor,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(end = 6.dp),
-                        )
-                        MarkdownInlineText(
-                            text = block.text,
-                            textColor = textColor,
-                            latexMeasurer = latexMeasurer,
-                            style = MaterialTheme.typography.bodyMedium,
-                            searchQuery = searchQuery,
-                            isCurrentMatch = isCurrentMatch,
-                            linkColor = linkColor,
-                            highlights = highlights,
-                            modifier = Modifier.weight(1f),
-                        )
+                        Row(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(
+                                        start = indent,
+                                    )
+                                    .padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.Top,
+                        ) {
+                            Text(
+                                text = "${block.index}.",
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                modifier = Modifier.padding(end = 8.dp),
+                            )
+                            MarkdownInlineText(
+                                text = block.text,
+                                textColor = textColor,
+                                latexMeasurer = latexMeasurer,
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    textDirection = TextDirection.Content,
+                                ),
+                                searchQuery = searchQuery,
+                                isCurrentMatch = isCurrentMatch,
+                                linkColor = linkColor,
+                                highlights = highlights,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    }
+                }
+
+                is MdBlock.Task -> {
+                    val indent = (block.level * 16).dp
+                    val taskDir = resolveDirection(block.text)
+                    androidx.compose.runtime.CompositionLocalProvider(
+                        LocalLayoutDirection provides taskDir,
+                    ) {
+                        Row(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(
+                                        start = indent,
+                                    )
+                                    .padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.Top,
+                        ) {
+                            Icon(
+                                imageVector =
+                                    if (block.checked) {
+                                        Icons.Outlined.CheckBox
+                                    } else {
+                                        Icons.Outlined.CheckBoxOutlineBlank
+                                    },
+                                contentDescription = null,
+                                tint =
+                                    if (block.checked) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        textColor.copy(
+                                            alpha = 0.6f,
+                                        )
+                                    },
+                                modifier = Modifier.size(18.dp).padding(top = 1.dp, end = 6.dp),
+                            )
+                            MarkdownInlineText(
+                                text = block.text,
+                                textColor = textColor,
+                                latexMeasurer = latexMeasurer,
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    textDirection = TextDirection.Content,
+                                ),
+                                searchQuery = searchQuery,
+                                isCurrentMatch = isCurrentMatch,
+                                linkColor = linkColor,
+                                highlights = highlights,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
                     }
                 }
 
                 is MdBlock.Quote -> {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min).padding(vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                    val quoteDir = resolveDirection(block.text)
+                    androidx.compose.runtime.CompositionLocalProvider(
+                        LocalLayoutDirection provides quoteDir,
                     ) {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .width(3.dp)
-                                    .fillMaxHeight()
-                                    .clip(RoundedCornerShape(2.dp))
-                                    .background(textColor.copy(alpha = 0.35f)),
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        MarkdownInlineText(
-                            text = block.text,
-                            textColor = textColor,
-                            latexMeasurer = latexMeasurer,
-                            style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic),
-                            searchQuery = searchQuery,
-                            isCurrentMatch = isCurrentMatch,
-                            linkColor = linkColor,
-                            highlights = highlights,
-                            modifier = Modifier.weight(1f),
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min).padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .width(4.dp)
+                                        .fillMaxHeight()
+                                        .clip(RoundedCornerShape(2.dp))
+                                        .background(quoteAccentColor),
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            MarkdownInlineText(
+                                text = block.text,
+                                textColor = quoteTextColor,
+                                latexMeasurer = latexMeasurer,
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontStyle = FontStyle.Italic,
+                                    textDirection = TextDirection.Content,
+                                ),
+                                searchQuery = searchQuery,
+                                isCurrentMatch = isCurrentMatch,
+                                linkColor = linkColor,
+                                highlights = highlights,
+                                modifier = Modifier.weight(1f).padding(vertical = 4.dp),
+                            )
+                        }
                     }
                 }
 
@@ -407,21 +513,30 @@ fun MarkdownText(
                 }
 
                 is MdBlock.Paragraph -> {
-                    MarkdownInlineText(
-                        text = block.text,
-                        textColor = textColor,
-                        latexMeasurer = latexMeasurer,
-                        style = MaterialTheme.typography.bodyMedium,
-                        searchQuery = searchQuery,
-                        isCurrentMatch = isCurrentMatch,
-                        linkColor = linkColor,
-                        highlights = highlights,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
-                    )
+                    val paraDir = resolveDirection(block.text)
+                    androidx.compose.runtime.CompositionLocalProvider(
+                        LocalLayoutDirection provides paraDir,
+                    ) {
+                        MarkdownInlineText(
+                            text = block.text,
+                            textColor = textColor,
+                            latexMeasurer = latexMeasurer,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                textDirection = TextDirection.Content,
+                                lineHeight = 24.sp,
+                            ),
+                            searchQuery = searchQuery,
+                            isCurrentMatch = isCurrentMatch,
+                            linkColor = linkColor,
+                            highlights = highlights,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                        )
+                    }
                 }
             }
         }
     }
+    } // end CompositionLocalProvider
 }
 
 /**

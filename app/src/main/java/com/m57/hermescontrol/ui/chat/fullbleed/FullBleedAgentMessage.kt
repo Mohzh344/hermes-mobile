@@ -29,8 +29,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
+import com.m57.hermescontrol.ui.chat.isRtlText
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -75,6 +76,10 @@ internal fun FullBleedAgentMessage(
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
     var copied by remember { mutableStateOf(false) }
+    
+    // Resolve overall direction for the message container
+    val isRtl = remember(message.content) { isRtlText(message.content) }
+    val layoutDir = if (isRtl) LayoutDirection.Rtl else LayoutDirection.Ltr
 
     // Copy feedback: briefly show ✓ then revert
     LaunchedEffect(copied) {
@@ -84,6 +89,9 @@ internal fun FullBleedAgentMessage(
         }
     }
 
+    androidx.compose.runtime.CompositionLocalProvider(
+        LocalLayoutDirection provides layoutDir,
+    ) {
     Column(
         modifier =
             modifier
@@ -158,6 +166,7 @@ internal fun FullBleedAgentMessage(
             }
         }
     }
+    } // end CompositionLocalProvider
 }
 
 /**

@@ -66,8 +66,9 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
+import com.m57.hermescontrol.ui.chat.isRtlText
 import com.m57.hermescontrol.R
 import com.m57.hermescontrol.data.model.Attachment
 import com.m57.hermescontrol.theme.DarkOnSurface
@@ -113,6 +114,10 @@ fun ChatBubble(
         val clipboard = LocalClipboard.current
         val scope = rememberCoroutineScope()
         var copied by remember { mutableStateOf(false) }
+        
+        // Resolve direction for alignment (so user's bubble wraps/aligns correctly if Arabic)
+        val isRtl = remember(message.content) { isRtlText(message.content) }
+        val layoutDir = if (isRtl) LayoutDirection.Rtl else LayoutDirection.Ltr
 
         // Copy feedback: briefly show ✓ then revert
         LaunchedEffect(copied) {
@@ -168,14 +173,17 @@ fun ChatBubble(
                                 RoundedCornerShape(
                                     topStart = 16.dp,
                                     topEnd = 16.dp,
-                                    bottomStart = 16.dp,
-                                    bottomEnd = 4.dp,
+                                    bottomStart = if (isRtl) 4.dp else 16.dp,
+                                    bottomEnd = if (isRtl) 16.dp else 4.dp,
                                 ),
                             ).background(color = primary)
                             .testTag("chat_bubble_user"),
                     color = Color.Transparent,
                     tonalElevation = 0.dp,
                 ) {
+                    androidx.compose.runtime.CompositionLocalProvider(
+                        LocalLayoutDirection provides layoutDir,
+                    ) {
                     Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
                         SelectionContainer {
                             Text(
@@ -240,6 +248,7 @@ fun ChatBubble(
                             }
                         }
                     }
+                    } // end CompositionLocalProvider
                 }
             }
         }

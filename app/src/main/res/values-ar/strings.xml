@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">هيرميس</string>
+
+    <!-- Chat -->
+    <string name="chat_send_desc">إرسال</string>
+    <string name="chat_mic_listening">جاري الاستماع…</string>
+    <string name="stt_permission_denied">صلاحية الميكروفون مطلوبة للإدخال الصوتي</string>
+    <string name="stt_not_available">التعرف على الصوت غير متاح على هذا الجهاز</string>
+    <string name="chat_send">إرسال</string>
+    <string name="chat_dismiss">إخفاء</string>
+    <string name="chat_sudo_title">مطلوب كلمة مرور Sudo</string>
+    <string name="chat_sudo_body">العميل الذكي يحتاج لكلمة مرور sudo للمتابعة. لن يتم عرضها.</string>
+    <string name="chat_sudo_password">كلمة المرور</string>
+    <string name="chat_secret_title">مطلوب مفتاح سري</string>
+    <string name="chat_secret_body">العميل الذكي يحتاج قيمة سرية (توكن أو كلمة مرور) للمتابعة. لن يتم عرضها.</string>
+    <string name="chat_secret_value">السر</string>
+    <string name="chat_search_placeholder">ابحث في الرسائل…</string>
+    <string name="chat_clear_search_desc">مسح</string>
+    <string name="chat_prev_match_desc">النتيجة السابقة</string>
+    <string name="chat_next_match_desc">النتيجة التالية</string>
+    <string name="chat_close_search_desc">إغلاق البحث</string>
+
+    <!-- Actions -->
+    <string name="action_retry">إعادة المحاولة</string>
+    <string name="action_cancel">إلغاء</string>
+    <string name="action_confirm">تأكيد</string>
+    <string name="action_clear">مسح</string>
+    <string name="action_ok">موافق</string>
+    <string name="action_progress_starting">جاري البدء…</string>
+    <string name="action_progress_running">قيد التشغيل…</string>
+    <string name="action_progress_succeeded">اكتمل</string>
+    <string name="action_progress_failed">فشل</string>
+    <string name="action_progress_failed_exit">فشل (خروج %1$d)</string>
+    <string name="action_delete">حذف</string>
+
+    <!-- Content Descriptions -->
+    <string name="content_desc_back">رجوع</string>
+    <string name="content_desc_open_drawer">فتح قائمة التصفح</string>
+    <string name="content_desc_refresh">تحديث</string>
+    <string name="common_save">حفظ</string>
+
+    <!-- Empty-state CTAs -->
+    <string name="empty_action_browse_hub">تصفح مهارات Hub</string>
+    <string name="empty_action_retry_search">أعد البحث</string>
+    <string name="empty_action_create_job">أنشئ مهمتك الأولى</string>
+    <string name="empty_action_add_server">إضافة خادم</string>
+    <string name="empty_action_connect_telegram">ربط قناة تيليجرام</string>
+    <string name="empty_action_configure_model">إعداد النموذج</string>
+    <string name="empty_action_start_chat">ابدأ محادثة جديدة</string>
+    <string name="empty_action_explore">استكشاف المهارات والمهام المجدولة</string>
+    <string name="empty_action_clear_search">مسح البحث</string>
+    <string name="common_cancel">إلغاء</string>
+    <string name="content_desc_clear_search">مسح البحث</string>
+
+    <!-- General Errors -->
+    <string name="error_unknown">خطأ غير معروف</string>
+    <string name="billing_free_plan">مجاني</string>
+    <string name="billing_usage">الاستخدام</string>
+    <string name="billing_cancel">إلغاء</string>
+    <string name="billing_renews">يجدد: %1$s</string>
+    <string name="billing_feature_unavailable">الفوترة غير متاحة على هذا الخادم</string>
+    <string name="billing_no_active_plan">لا توجد خطة مفعلة — أنت على الباقة المجانية.</string>
+    <string name="billing_login_required">سجل الدخول لعرض خطتك.</string>
+    <string name="billing_credits_remaining">الرصيد المتبقي: %1$s</string>
+    <string name="billing_plan">الخطة</string>
+    <string name="billing_topup">شحن الرصيد</string>
+
+    <!-- Navigation & Drawer -->
+    <string name="press_back_again_to_exit">اضغط رجوع مرة أخرى للخروج</string>
+</resources>
