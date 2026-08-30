@@ -32,10 +32,9 @@ import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.LayoutDirection
-import com.m57.hermescontrol.ui.chat.isRtlText
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.m57.hermescontrol.R
 import com.m57.hermescontrol.data.model.Attachment
@@ -44,6 +43,7 @@ import com.m57.hermescontrol.ui.chat.ImageViewerModel
 import com.m57.hermescontrol.ui.chat.InlineAttachment
 import com.m57.hermescontrol.ui.chat.MarkdownText
 import com.m57.hermescontrol.ui.chat.components.ReasoningCard
+import com.m57.hermescontrol.ui.chat.isRtlText
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -78,7 +78,7 @@ internal fun FullBleedAgentMessage(
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
     var copied by remember { mutableStateOf(false) }
-    
+
     // Resolve overall direction for the message container
     val isRtl = remember(message.content) { isRtlText(message.content) }
     val layoutDir = if (isRtl) LayoutDirection.Rtl else LayoutDirection.Ltr
@@ -94,80 +94,80 @@ internal fun FullBleedAgentMessage(
     androidx.compose.runtime.CompositionLocalProvider(
         LocalLayoutDirection provides layoutDir,
     ) {
-    Column(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .testTag("fullbleed_agent_message"),
-    ) {
-        if (showTurnHeader) {
-            AssistantTurnHeader(message.timestamp)
-        }
+        Column(
+            modifier =
+                modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .testTag("fullbleed_agent_message"),
+        ) {
+            if (showTurnHeader) {
+                AssistantTurnHeader(message.timestamp)
+            }
 
-        if (showReasoning && message.reasoningText.isNotBlank()) {
-            ReasoningCard(
-                reasoningText = message.reasoningText,
-                isStreaming = message.isStreaming,
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-        }
-
-        // Defense-in-depth: never render an empty prose block (blank bubble +
-        // lone Copy button). Blank settled rows are tool-call placeholders that
-        // slipped through upstream mapping; streaming keeps rendering so the
-        // live cursor survives until the first delta lands.
-        if (message.content.isNotBlank() || message.isStreaming) {
-            SelectionContainer {
-                MarkdownText(
-                    text = message.content,
-                    textColor = textColor,
+            if (showReasoning && message.reasoningText.isNotBlank()) {
+                ReasoningCard(
+                    reasoningText = message.reasoningText,
                     isStreaming = message.isStreaming,
-                    searchQuery = searchQuery,
-                    isCurrentMatch = isCurrentMatch,
-                    onImageClick = onImageClick,
                 )
+                Spacer(modifier = Modifier.height(6.dp))
             }
-        }
 
-        // Render inline attachments (mirrors ChatBubble so agent-delivered
-        // media — images, files — shows in full-bleed mode too).
-        if (!message.attachments.isNullOrEmpty()) {
-            Spacer(modifier = Modifier.height(6.dp))
-            message.attachments.forEach { attachment ->
-                InlineAttachment(
-                    attachment = attachment,
-                    textColor = textColor,
-                    onOpen = { onOpenAttachment(it) },
-                    onSave = { onSaveAttachment(it) },
-                    savingPath = savingAttachmentPath,
-                    openingPath = openingAttachmentPath,
-                    canSave = canSaveAttachment,
-                    onImageClick = onImageClick,
-                )
-                Spacer(modifier = Modifier.height(4.dp))
+            // Defense-in-depth: never render an empty prose block (blank bubble +
+            // lone Copy button). Blank settled rows are tool-call placeholders that
+            // slipped through upstream mapping; streaming keeps rendering so the
+            // live cursor survives until the first delta lands.
+            if (message.content.isNotBlank() || message.isStreaming) {
+                SelectionContainer {
+                    MarkdownText(
+                        text = message.content,
+                        textColor = textColor,
+                        isStreaming = message.isStreaming,
+                        searchQuery = searchQuery,
+                        isCurrentMatch = isCurrentMatch,
+                        onImageClick = onImageClick,
+                    )
+                }
             }
-        }
 
-        if (!message.isStreaming) {
-            IconButton(
-                onClick = {
-                    scope.launch {
-                        clipboard.setClipEntry(ClipEntry(ClipData.newPlainText(null, message.content)))
-                    }
-                    copied = true
-                },
-                modifier = Modifier.size(28.dp).testTag("fullbleed_copy"),
-            ) {
-                Icon(
-                    imageVector = if (copied) Icons.Filled.Check else Icons.Filled.ContentCopy,
-                    contentDescription = stringResource(R.string.content_desc_copy),
-                    modifier = Modifier.size(14.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            // Render inline attachments (mirrors ChatBubble so agent-delivered
+            // media — images, files — shows in full-bleed mode too).
+            if (!message.attachments.isNullOrEmpty()) {
+                Spacer(modifier = Modifier.height(6.dp))
+                message.attachments.forEach { attachment ->
+                    InlineAttachment(
+                        attachment = attachment,
+                        textColor = textColor,
+                        onOpen = { onOpenAttachment(it) },
+                        onSave = { onSaveAttachment(it) },
+                        savingPath = savingAttachmentPath,
+                        openingPath = openingAttachmentPath,
+                        canSave = canSaveAttachment,
+                        onImageClick = onImageClick,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+            }
+
+            if (!message.isStreaming) {
+                IconButton(
+                    onClick = {
+                        scope.launch {
+                            clipboard.setClipEntry(ClipEntry(ClipData.newPlainText(null, message.content)))
+                        }
+                        copied = true
+                    },
+                    modifier = Modifier.size(28.dp).testTag("fullbleed_copy"),
+                ) {
+                    Icon(
+                        imageVector = if (copied) Icons.Filled.Check else Icons.Filled.ContentCopy,
+                        contentDescription = stringResource(R.string.content_desc_copy),
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
-    }
     } // end CompositionLocalProvider
 }
 
