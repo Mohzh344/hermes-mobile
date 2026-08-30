@@ -670,15 +670,16 @@ private fun MarkdownTable(
                 ) {
                     Text(
                         text =
-                            parseInlineSource(
-                                source = cell,
-                                textColor = textColor,
-                                searchQuery = "",
-                                isCurrentMatch = false,
-                                linkColor = linkColor,
-                                highlights = highlightColors,
-                                bold = true,
-                            ),
+                                                        parseInlineSource(
+                                                            text = cell,
+                                                            source = cell,
+                                                            textColor = textColor,
+                                                            searchQuery = "",
+                                                            isCurrentMatch = false,
+                                                            linkColor = linkColor,
+                                                            highlights = highlightColors,
+                                                            bold = true,
+                                                        ),
                         textAlign = tableTextAlign(alignments.getOrNull(idx)),
                         color = textColor,
                         style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
@@ -701,6 +702,7 @@ private fun MarkdownTable(
                         Text(
                             text =
                                 parseInlineSource(
+                                    text = cell,
                                     source = cell,
                                     textColor = textColor,
                                     searchQuery = "",

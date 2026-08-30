@@ -30,10 +30,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -318,7 +320,4 @@ private fun BubbleColorSwatches(
 // Small extension so we don't have to import collectAsStateWithLifecycle
 // at the top of this file (kept local to avoid cluttering the call site).
 @Composable
-private fun <T> kotlinx.coroutines.flow.StateFlow<T>.collectAsStateWithLifecycleValue(): T {
-    val state = androidx.lifecycle.compose.collectAsStateWithLifecycle(this).value
-    return state
-}
+private fun <T> kotlinx.coroutines.flow.StateFlow<T>.collectAsStateWithLifecycleValue(): T = collectAsStateWithLifecycle().value

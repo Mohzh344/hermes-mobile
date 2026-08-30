@@ -16,6 +16,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -74,7 +75,7 @@ fun GlassSurface(
                         size = Size(size.width, size.height * 0.6f),
                     )
                 }.border(
-                    width = 1.dp.toPx(),
+                    width = 1.dp,
                     color = Color.White.copy(alpha = borderAlpha),
                     shape = RoundedCornerShape(cornerRadius),
                 ),
