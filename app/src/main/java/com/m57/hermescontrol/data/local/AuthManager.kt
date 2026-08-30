@@ -682,4 +682,24 @@ object AuthManager {
     fun setDismissedUpdateTag(tag: String?) {
         serverStore.update { it.copy(dismissedUpdateTag = tag) }
     }
+
+    // ── Chat UI customization (rtl-design-upgrade) ────────────────────
+
+    fun getChatBackgroundUri(): String? = serverStore.getLatestState().chatBackgroundUri
+
+    fun setChatBackgroundUri(uri: String?) {
+        serverStore.update { it.copy(chatBackgroundUri = uri) }
+    }
+
+    fun getUserBubbleColorArgb(): Long? = serverStore.getLatestState().userBubbleColorArgb
+
+    fun setUserBubbleColorArgb(argb: Long?) {
+        serverStore.update { it.copy(userBubbleColorArgb = argb) }
+    }
+
+    fun isGlassBlurEnabled(): Boolean = serverStore.getLatestState().glassBlurEnabled
+
+    fun setGlassBlurEnabled(enabled: Boolean) {
+        serverStore.update { it.copy(glassBlurEnabled = enabled) }
+    }
 }

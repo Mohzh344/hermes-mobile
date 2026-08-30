@@ -88,7 +88,12 @@ import com.m57.hermescontrol.data.ws.ConnectionStatus
 import com.m57.hermescontrol.data.ws.HermesWsClient
 import com.m57.hermescontrol.notification.NotificationHelper
 import com.m57.hermescontrol.theme.LocalHermesStatusColors
+import com.m57.hermescontrol.ui.chat.ChatInputPolicy
+import com.m57.hermescontrol.ui.chat.ChatPreferences
+import com.m57.hermescontrol.ui.chat.LocalChatBackgroundUri
+import com.m57.hermescontrol.ui.chat.LocalUserBubbleColor
 import com.m57.hermescontrol.ui.chat.components.ChatConnectionBanner
+import com.m57.hermescontrol.ui.chat.components.ChatBackground
 import com.m57.hermescontrol.ui.chat.components.ChatInputBar
 import com.m57.hermescontrol.ui.chat.components.ChatLifecycleEffects
 import com.m57.hermescontrol.ui.chat.components.ChatLoadingOverlay
@@ -111,6 +116,7 @@ import com.m57.hermescontrol.ui.common.AppUpdateDialog
 import com.m57.hermescontrol.ui.common.AutoScrollingTitleText
 import com.m57.hermescontrol.ui.common.CredentialWarningBanner
 import com.m57.hermescontrol.ui.common.HermesScaffold
+import com.m57.hermescontrol.ui.common.LocalGlassBlurEnabled
 import com.m57.hermescontrol.ui.common.NavIcon
 import com.m57.hermescontrol.ui.model.components.ModelPickerDialog
 import com.m57.hermescontrol.ui.settings.AppUpdateViewModel
@@ -542,6 +548,16 @@ fun ChatScreen(
             }
         },
     ) { _ ->
+        // Provide the chat-surface customization locals so the bubble, the
+        // background layer, and the composer all react to user preferences.
+        val glassEnabled = ChatPreferences.glassBlurEnabled.collectAsStateWithLifecycle().value
+        val backgroundUri = ChatPreferences.backgroundUri.collectAsStateWithLifecycle().value
+        val userBubbleColor = ChatPreferences.userBubbleColorArgb.collectAsStateWithLifecycle().value
+        androidx.compose.runtime.CompositionLocalProvider(
+            LocalGlassBlurEnabled provides glassEnabled,
+            LocalChatBackgroundUri provides backgroundUri,
+            LocalUserBubbleColor provides userBubbleColor,
+        ) {
         Column(
             modifier =
                 Modifier
@@ -666,6 +682,10 @@ fun ChatScreen(
                         .weight(1f)
                         .fillMaxWidth(),
             ) {
+                // Layered background image (rtl-design-upgrade) — sits behind the
+                // message list. Theme background still shows through any alpha gap.
+                val backgroundUri = LocalChatBackgroundUri.current
+                ChatBackground(imageUri = backgroundUri)
                 val onSaveAttachment: (com.m57.hermescontrol.data.model.Attachment) -> Unit = { attachment ->
                     if (canStartAttachmentSave(pendingSavePath, state.savingAttachmentPath)) {
                         pendingSavePath = viewModel.gatewayPathFor(attachment)
@@ -939,4 +959,5 @@ fun ChatScreen(
             )
         }
     }
+    } // end CompositionLocalProvider
 }

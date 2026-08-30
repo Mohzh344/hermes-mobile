@@ -34,6 +34,7 @@ import com.m57.hermescontrol.ui.common.NavIcon
 import com.m57.hermescontrol.ui.settings.components.AboutSection
 import com.m57.hermescontrol.ui.settings.components.AppearanceSection
 import com.m57.hermescontrol.ui.settings.components.BehaviorSection
+import com.m57.hermescontrol.ui.settings.components.ChatCustomizationSection
 import com.m57.hermescontrol.ui.settings.components.ChatSection
 import com.m57.hermescontrol.ui.settings.components.ConnectionSection
 import com.m57.hermescontrol.ui.settings.components.LanguageSection
@@ -134,6 +135,7 @@ internal fun SettingsAppearancePage(
                 themePreset = state.themePreset,
                 onThemePresetChange = viewModel::onThemePresetChange,
             )
+            ChatCustomizationSection()
         }
     }
 }

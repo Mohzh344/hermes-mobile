@@ -1,13 +1,18 @@
 package com.m57.hermescontrol.ui.common
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
@@ -16,25 +21,31 @@ import androidx.compose.material3.DrawerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.m57.hermescontrol.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -164,52 +175,25 @@ fun HermesScaffold(
         contentWindowInsets = WindowInsets.navigationBars,
         snackbarHost = { snackbarHost() },
         topBar = {
-            TopAppBar(
+            // Glass-style top bar: a translucent floating pill that holds the
+            // title and all chrome. The status bar sits behind it (transparent)
+            // so we don't have to draw a solid bar — the glass pill floats over
+            // whatever content scrolls behind it.
+            GlassTopBar(
                 title = title,
-                navigationIcon = {
-                    when (val icon = navigationIcon) {
-                        is NavIcon.Back -> {
-                            IconButton(onClick = icon.onBack) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = stringResource(R.string.content_desc_back),
-                                    modifier = Modifier.testTag("back_button"),
-                                )
-                            }
-                        }
-
-                        is NavIcon.Menu -> {
-                            IconButton(onClick = icon.onOpen) {
-                                Icon(
-                                    imageVector = Icons.Filled.Menu,
-                                    contentDescription = stringResource(R.string.content_desc_open_drawer),
-                                    modifier = Modifier.testTag("menu_button"),
-                                )
-                            }
-                        }
-
-                        null -> { /* no navigation icon */ }
-                    }
-                },
+                navigationIcon = navigationIcon,
                 actions = {
                     if (onRefresh != null) {
-                        IconButton(onClick = onRefresh) {
+                        GlassActionBubble(onClick = onRefresh) {
                             Icon(
                                 imageVector = Icons.Filled.Refresh,
                                 contentDescription = stringResource(R.string.content_desc_refresh),
-                                modifier = Modifier.testTag("refresh_button"),
+                                modifier = Modifier.size(20.dp).testTag("refresh_button"),
                             )
                         }
                     }
                     actions()
                 },
-                colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        titleContentColor = MaterialTheme.colorScheme.onSurface,
-                        navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                        actionIconContentColor = MaterialTheme.colorScheme.onSurface,
-                    ),
                 scrollBehavior = scrollBehavior,
             )
         },
@@ -267,3 +251,144 @@ private fun Modifier.dynamicTopBarPadding(
             placeable.placeRelative(0, activeTopPadding)
         }
     }
+
+/**
+ * Glass-style floating top bar.
+ *
+ * Replaces Material3's [androidx.compose.material3.TopAppBar] with a frosted
+ * glass pill that floats over the screen content. The pill shrinks to a
+ * tighter shape on scroll (handled by [scrollBehavior] state). Layout:
+ *
+ *  ┌─────────────────────────────────────────────────────────────┐
+ *  │ [bubble]   <floating title text>                  [bubbles]  │
+ *  └─────────────────────────────────────────────────────────────┘
+ *
+ * The icons themselves sit inside small [GlassBubble] "pills" so they read
+ * as floating chrome rather than inline buttons. The title is rendered
+ * with a thin, light typeface weight so the bar reads as airy even when
+ * the underlying content is busy.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun GlassTopBar(
+    title: @Composable () -> Unit,
+    navigationIcon: NavIcon?,
+    actions: @Composable () -> Unit,
+    scrollBehavior: TopAppBarScrollBehavior,
+) {
+    val surface = MaterialTheme.colorScheme.surface
+    val animatedSurface by animateColorAsState(
+        targetValue = surface,
+        animationSpec = tween(durationMillis = 200),
+        label = "topBarTint",
+    )
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .testTag("hermes_top_bar"),
+        contentAlignment = Alignment.Center,
+    ) {
+        GlassSurface(
+            modifier = Modifier.fillMaxWidth(),
+            cornerRadius = 26.dp,
+            tint = animatedSurface,
+        ) {
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                when (val icon = navigationIcon) {
+                    is NavIcon.Back -> {
+                        GlassActionBubble(
+                            onClick = icon.onBack,
+                            modifier = Modifier.testTag("back_button"),
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.content_desc_back),
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                    }
+
+                    is NavIcon.Menu -> {
+                        GlassActionBubble(
+                            onClick = icon.onOpen,
+                            modifier = Modifier.testTag("menu_button"),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Menu,
+                                contentDescription = stringResource(R.string.content_desc_open_drawer),
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                    }
+
+                    null -> { /* leave room for the title only */ }
+                }
+                Box(
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .padding(horizontal = 8.dp),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    CompositionLocalProvider(
+                        androidx.compose.material3.LocalContentColor provides
+                            MaterialTheme.colorScheme.onSurface,
+                    ) {
+                        // Thin, light-weight title — the bar reads as airy.
+                        androidx.compose.runtime.CompositionLocalProvider(
+                            androidx.compose.material3.LocalTextStyle provides
+                                MaterialTheme.typography.titleSmall.copy(
+                                    fontWeight = FontWeight.Light,
+                                    letterSpacing = 0.4.sp,
+                                ),
+                        ) {
+                            title()
+                        }
+                    }
+                }
+                actions()
+            }
+        }
+    }
+}
+
+/**
+ * Squircle glass pill used for top-bar / composer chrome (menu, back, send, mic).
+ * Same visual language as [GlassSurface] but compact, with built-in click
+ * feedback (color flash) and accessibility support.
+ */
+@Composable
+private fun GlassActionBubble(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    content: @Composable () -> Unit,
+) {
+    androidx.compose.material3.IconButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier.size(40.dp),
+        colors = IconButtonDefaults.iconButtonColors(
+            containerColor = androidx.compose.ui.graphics.Color.Transparent,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(36.dp)
+                    .testTag("glass_bubble"),
+            contentAlignment = Alignment.Center,
+        ) {
+            content()
+        }
+    }
+}

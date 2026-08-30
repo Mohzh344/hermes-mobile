@@ -9,13 +9,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -29,23 +32,26 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.m57.hermescontrol.R
 
 /**
- * Bottom toolbar row for the chat composer.
+ * Bottom toolbar row for the chat composer — v2 (rtl-design-upgrade).
  *
- * Layout: [📎 attach] [model chip] [←spacer→] [🧠 reasoning] [🎙 mic]
+ * Layout:
+ *  [📎 attach] [model chip] [←spacer→] [🧠 reasoning] [🎙 mic]
  *
- * The reasoning chip opens a dropdown menu to pick a level (instead of cycling).
- * When [canDisableReasoning] is false the "None" level is disabled with a
- * "reasoning always on" hint (issue #946). Absent key (null) means no
- * restriction is known — full scale offered.
- * When [supportsReasoning] is false the model takes no reasoning parameter
- * and the chip is disabled.
+ * Material icons replace the previous emoji glyphs and all icons sit inside
+ * glass bubbles for visual consistency with the new top bar. The reasoning
+ * chip opens a dropdown menu to pick a level (instead of cycling). When
+ * [canDisableReasoning] is false the "None" level is disabled with a
+ * "reasoning always on" hint (issue #946). When [supportsReasoning] is false
+ * the model takes no reasoning parameter and the chip is disabled.
  */
 @Composable
 fun ComposerToolbar(
@@ -69,68 +75,104 @@ fun ComposerToolbar(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 4.dp)
+                .padding(horizontal = 4.dp, vertical = 2.dp)
                 .testTag("composer_toolbar"),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        // Attach button
+        // Attach button — glass bubble, Material icon.
         IconButton(
             onClick = onAttachTap,
             enabled = isConnected,
-            modifier = Modifier.size(36.dp),
+            colors =
+                IconButtonDefaults.iconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
+            modifier =
+                Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .testTag("attach_button"),
         ) {
             Icon(
-                imageVector = Icons.Default.AttachFile,
+                imageVector = Icons.Filled.AttachFile,
                 contentDescription = stringResource(R.string.chat_attach_file),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp),
             )
         }
 
-        // Model chip — takes available space, fixed height
+        // Model chip — takes available space, fixed height.
         FilterChip(
             selected = currentSessionModel != null,
             onClick = onModelTap,
             label = {
                 Row(
                     modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         text = currentSessionModel ?: "Model",
                         style = MaterialTheme.typography.bodySmall,
                         maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             },
+            colors =
+                FilterChipDefaults.filterChipColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
             modifier =
                 Modifier
-                    .weight(1f)
-                    .height(28.dp)
+                    .height(36.dp)
                     .testTag("model_chip"),
         )
 
-        // Reasoning chip with dropdown menu (right side, next to mic)
+        // Reasoning chip with dropdown menu (right side, next to mic).
         Box {
             FilterChip(
                 selected = reasoningLevel != null,
                 onClick = { showReasoningMenu = true },
                 enabled = !reasoningDisabledForModel,
                 label = {
-                    Text(
-                        text =
-                            if (reasoningDisabledForModel) {
-                                "No reasoning"
-                            } else {
-                                buildReasoningLabel(reasoningLevel)
-                            },
-                        style = MaterialTheme.typography.bodySmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Filled.Psychology,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint =
+                                if (reasoningDisabledForModel) {
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                } else {
+                                    MaterialTheme.colorScheme.primary
+                                },
+                        )
+                        androidx.compose.foundation.layout.Spacer(
+                            modifier = Modifier.size(4.dp),
+                        )
+                        Text(
+                            text =
+                                if (reasoningDisabledForModel) {
+                                    "No reasoning"
+                                } else {
+                                    buildReasoningLabel(reasoningLevel)
+                                },
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 },
+                colors =
+                    FilterChipDefaults.filterChipColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
                 modifier =
                     Modifier
-                        .height(28.dp)
+                        .height(36.dp)
                         .testTag("reasoning_chip"),
             )
 
@@ -181,7 +223,7 @@ fun ComposerToolbar(
                                 text = label,
                                 fontWeight =
                                     if (reasoningLevel == level) {
-                                        MaterialTheme.typography.bodyMedium.fontWeight
+                                        FontWeight.SemiBold
                                     } else {
                                         null
                                     },
@@ -203,7 +245,7 @@ fun ComposerToolbar(
             }
         }
 
-        // Mic / Stop button
+        // Mic / Stop button — glass bubble, prominent when listening.
         IconButton(
             onClick = onMicTap,
             enabled = isConnected,
@@ -214,16 +256,26 @@ fun ComposerToolbar(
                         contentColor = MaterialTheme.colorScheme.onError,
                     )
                 } else {
-                    IconButtonDefaults.filledTonalIconButtonColors()
+                    IconButtonDefaults.iconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 },
             modifier =
                 Modifier
-                    .size(36.dp)
+                    .size(40.dp)
+                    .clip(CircleShape)
                     .testTag(if (isListening) "mic_stop_button" else "mic_button"),
         ) {
             Icon(
-                imageVector = if (isListening) Icons.Default.Stop else Icons.Default.Mic,
-                contentDescription = if (isListening) "Stop listening" else "Mic",
+                imageVector = if (isListening) Icons.Filled.Stop else Icons.Filled.Mic,
+                contentDescription =
+                    if (isListening) {
+                        "Stop listening"
+                    } else {
+                        stringResource(R.string.chat_mic_desc)
+                    },
+                modifier = Modifier.size(20.dp),
             )
         }
     }

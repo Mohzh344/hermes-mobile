@@ -643,6 +643,14 @@ private fun MarkdownTable(
 ) {
     val headerBg = textColor.copy(alpha = 0.08f)
     val alignments = block.alignments
+    val linkColor = MaterialTheme.colorScheme.primary
+    val highlightColors = com.m57.hermescontrol.theme.searchHighlightColors()
+    // Lightweight markdown pipeline for table cells: only the inline formatters
+    // we actually need inside cells (bold/italic/code/links) — list parsing is
+    // skipped on purpose because a list inside a table cell is rare and would
+    // cost a lot of regex work per render. Bold + italic + inline-code + link
+    // covers every common authoring case (e.g. `**yes**`, `*maybe*`, `\`code\``,
+    // `https://…`).
     Column(
         modifier =
             Modifier
@@ -653,16 +661,29 @@ private fun MarkdownTable(
         // Header row
         Row(modifier = Modifier.background(headerBg)) {
             block.header.forEachIndexed { idx, cell ->
-                Text(
-                    text = cell,
-                    textAlign = tableTextAlign(alignments.getOrNull(idx)),
-                    color = textColor,
-                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                Box(
                     modifier =
                         Modifier
                             .width(TABLE_COL_WIDTH)
                             .padding(6.dp),
-                )
+                    contentAlignment = tableCellAlignment(alignments.getOrNull(idx)),
+                ) {
+                    Text(
+                        text =
+                            parseInlineSource(
+                                source = cell,
+                                textColor = textColor,
+                                searchQuery = "",
+                                isCurrentMatch = false,
+                                linkColor = linkColor,
+                                highlights = highlightColors,
+                                bold = true,
+                            ),
+                        textAlign = tableTextAlign(alignments.getOrNull(idx)),
+                        color = textColor,
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                    )
+                }
             }
         }
         HorizontalDivider(color = textColor.copy(alpha = 0.25f))
@@ -670,22 +691,41 @@ private fun MarkdownTable(
         block.rows.forEach { row ->
             Row {
                 row.forEachIndexed { idx, cell ->
-                    Text(
-                        text = cell,
-                        textAlign = tableTextAlign(alignments.getOrNull(idx)),
-                        color = textColor,
-                        style = MaterialTheme.typography.bodySmall,
+                    Box(
                         modifier =
                             Modifier
                                 .width(TABLE_COL_WIDTH)
                                 .padding(6.dp),
-                    )
+                        contentAlignment = tableCellAlignment(alignments.getOrNull(idx)),
+                    ) {
+                        Text(
+                            text =
+                                parseInlineSource(
+                                    source = cell,
+                                    textColor = textColor,
+                                    searchQuery = "",
+                                    isCurrentMatch = false,
+                                    linkColor = linkColor,
+                                    highlights = highlightColors,
+                                ),
+                            textAlign = tableTextAlign(alignments.getOrNull(idx)),
+                            color = textColor,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
                 }
             }
             HorizontalDivider(color = textColor.copy(alpha = 0.1f))
         }
     }
 }
+
+private fun tableCellAlignment(align: TableAlign?): Alignment =
+    when (align) {
+        TableAlign.CENTER -> Alignment.Center
+        TableAlign.RIGHT -> Alignment.CenterEnd
+        else -> Alignment.CenterStart
+    }
 
 private fun tableTextAlign(align: TableAlign?): TextAlign? =
     when (align) {
@@ -1250,7 +1290,10 @@ private fun parseInlineSource(
     isCurrentMatch: Boolean,
     linkColor: Color,
     highlights: SearchHighlightColors,
+    source: String = text,
+    bold: Boolean = false,
 ): AnnotatedString {
+    val src = source
     val searchHighlightColor =
         if (isCurrentMatch) {
             highlights.currentSearchBackground to highlights.currentSearchForeground
@@ -1259,233 +1302,242 @@ private fun parseInlineSource(
         }
 
     return buildAnnotatedString {
-        var i = 0
-        val src = text
-        while (i < src.length) {
-            when {
-                // ***bold italic***
-                src.startsWith("***", i) -> {
-                    val end = src.indexOf("***", i + 3)
-                    if (end != -1) {
-                        withStyle(SpanStyle(fontWeight = FontWeight.Bold, fontStyle = FontStyle.Italic)) {
-                            append(src.substring(i + 3, end))
-                        }
-                        i = end + 3
-                    } else {
-                        append(src[i])
-                        i++
-                    }
-                }
-
-                // **bold**
-                src.startsWith("**", i) -> {
-                    val end = src.indexOf("**", i + 2)
-                    if (end != -1) {
-                        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                            append(src.substring(i + 2, end))
-                        }
-                        i = end + 2
-                    } else {
-                        append(src[i])
-                        i++
-                    }
-                }
-
-                // ~~strike~~
-                src.startsWith("~~", i) -> {
-                    val end = src.indexOf("~~", i + 2)
-                    if (end != -1) {
-                        withStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) {
-                            append(src.substring(i + 2, end))
-                        }
-                        i = end + 2
-                    } else {
-                        append(src[i])
-                        i++
-                    }
-                }
-
-                // *italic*
-                src.startsWith("*", i) -> {
-                    val end = src.indexOf('*', i + 1)
-                    if (end != -1 && end > i + 1) {
-                        withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                            append(src.substring(i + 1, end))
-                        }
-                        i = end + 1
-                    } else {
-                        append(src[i])
-                        i++
-                    }
-                }
-
-                // ==highlight==
-                src.startsWith("==", i) -> {
-                    val end = src.indexOf("==", i + 2)
-                    if (end != -1) {
-                        withStyle(SpanStyle(background = highlights.markupBackground)) {
-                            append(src.substring(i + 2, end))
-                        }
-                        i = end + 2
-                    } else {
-                        append(src[i])
-                        i++
-                    }
-                }
-
-                // ^superscript^
-                src.startsWith("^", i) -> {
-                    val end = src.indexOf('^', i + 1)
-                    if (end != -1 && end > i + 1) {
-                        withStyle(SpanStyle(baselineShift = BaselineShift.Superscript)) {
-                            append(src.substring(i + 1, end))
-                        }
-                        i = end + 1
-                    } else {
-                        append(src[i])
-                        i++
-                    }
-                }
-
-                // ~subscript~ (single tilde; ~~ handled above)
-                src.startsWith("~", i) -> {
-                    val end = src.indexOf('~', i + 1)
-                    if (end != -1 && end > i + 1) {
-                        withStyle(SpanStyle(baselineShift = BaselineShift.Subscript)) {
-                            append(src.substring(i + 1, end))
-                        }
-                        i = end + 1
-                    } else {
-                        append(src[i])
-                        i++
-                    }
-                }
-
-                // <kbd>key</kbd>
-                src.startsWith("<kbd>", i) -> {
-                    val end = src.indexOf("</kbd>", i)
-                    if (end != -1) {
-                        withStyle(
-                            SpanStyle(
-                                fontFamily = FontFamily.Monospace,
-                                background = textColor.copy(alpha = 0.12f),
-                            ),
-                        ) {
-                            append(src.substring(i + 5, end))
-                        }
-                        i = end + 6
-                    } else {
-                        append(src[i])
-                        i++
-                    }
-                }
-
-                // [^ref] footnote marker -> superscript
-                src.startsWith("[^", i) -> {
-                    val close = src.indexOf(']', i)
-                    if (close != -1) {
-                        val id = src.substring(i + 2, close)
-                        withStyle(
-                            SpanStyle(
-                                baselineShift = BaselineShift.Superscript,
-                                color = linkColor,
-                                fontWeight = FontWeight.Bold,
-                            ),
-                        ) {
-                            append("[$id]")
-                        }
-                        i = close + 1
-                    } else {
-                        append(src[i])
-                        i++
-                    }
-                }
-
-                // [text](url)
-                src.startsWith("[", i) -> {
-                    val close = src.indexOf(']', i)
-                    if (close != -1 && close + 1 < src.length && src[close + 1] == '(') {
-                        val urlEnd = src.indexOf(')', close + 2)
-                        if (urlEnd != -1) {
-                            val label = src.substring(i + 1, close)
-                            val url = src.substring(close + 2, urlEnd)
-                            pushLink(LinkAnnotation.Url(url))
-                            withStyle(
-                                SpanStyle(
-                                    color = linkColor,
-                                    textDecoration = TextDecoration.Underline,
-                                ),
-                            ) {
-                                append(label)
+        val body: AnnotatedString.Builder.() -> Unit = body@{
+            var i = 0
+            while (i < src.length) {
+                when {
+                    // ***bold italic***
+                    src.startsWith("***", i) -> {
+                        val end = src.indexOf("***", i + 3)
+                        if (end != -1) {
+                            withStyle(SpanStyle(fontWeight = FontWeight.Bold, fontStyle = FontStyle.Italic)) {
+                                append(src.substring(i + 3, end))
                             }
-                            pop()
-                            i = urlEnd + 1
+                            i = end + 3
                         } else {
                             append(src[i])
                             i++
                         }
-                    } else {
-                        append(src[i])
-                        i++
                     }
-                }
 
-                // `inline code`
-                src.startsWith("`", i) -> {
-                    val end = src.indexOf('`', i + 1)
-                    if (end != -1) {
+                    // **bold**
+                    src.startsWith("**", i) -> {
+                        val end = src.indexOf("**", i + 2)
+                        if (end != -1) {
+                            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                                append(src.substring(i + 2, end))
+                            }
+                            i = end + 2
+                        } else {
+                            append(src[i])
+                            i++
+                        }
+                    }
+
+                    // ~~strike~~
+                    src.startsWith("~~", i) -> {
+                        val end = src.indexOf("~~", i + 2)
+                        if (end != -1) {
+                            withStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) {
+                                append(src.substring(i + 2, end))
+                            }
+                            i = end + 2
+                        } else {
+                            append(src[i])
+                            i++
+                        }
+                    }
+
+                    // *italic*
+                    src.startsWith("*", i) -> {
+                        val end = src.indexOf('*', i + 1)
+                        if (end != -1 && end > i + 1) {
+                            withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                                append(src.substring(i + 1, end))
+                            }
+                            i = end + 1
+                        } else {
+                            append(src[i])
+                            i++
+                        }
+                    }
+
+                    // ==highlight==
+                    src.startsWith("==", i) -> {
+                        val end = src.indexOf("==", i + 2)
+                        if (end != -1) {
+                            withStyle(SpanStyle(background = highlights.markupBackground)) {
+                                append(src.substring(i + 2, end))
+                            }
+                            i = end + 2
+                        } else {
+                            append(src[i])
+                            i++
+                        }
+                    }
+
+                    // ^superscript^
+                    src.startsWith("^", i) -> {
+                        val end = src.indexOf('^', i + 1)
+                        if (end != -1 && end > i + 1) {
+                            withStyle(SpanStyle(baselineShift = BaselineShift.Superscript)) {
+                                append(src.substring(i + 1, end))
+                            }
+                            i = end + 1
+                        } else {
+                            append(src[i])
+                            i++
+                        }
+                    }
+
+                    // ~subscript~ (single tilde; ~~ handled above)
+                    src.startsWith("~", i) -> {
+                        val end = src.indexOf('~', i + 1)
+                        if (end != -1 && end > i + 1) {
+                            withStyle(SpanStyle(baselineShift = BaselineShift.Subscript)) {
+                                append(src.substring(i + 1, end))
+                            }
+                            i = end + 1
+                        } else {
+                            append(src[i])
+                            i++
+                        }
+                    }
+
+                    // <kbd>key</kbd>
+                    src.startsWith("<kbd>", i) -> {
+                        val end = src.indexOf("</kbd>", i)
+                        if (end != -1) {
+                            withStyle(
+                                SpanStyle(
+                                    fontFamily = FontFamily.Monospace,
+                                    background = textColor.copy(alpha = 0.12f),
+                                ),
+                            ) {
+                                append(src.substring(i + 5, end))
+                            }
+                            i = end + 6
+                        } else {
+                            append(src[i])
+                            i++
+                        }
+                    }
+
+                    // [^ref] footnote marker -> superscript
+                    src.startsWith("[^", i) -> {
+                        val close = src.indexOf(']', i)
+                        if (close != -1) {
+                            val id = src.substring(i + 2, close)
+                            withStyle(
+                                SpanStyle(
+                                    baselineShift = BaselineShift.Superscript,
+                                    color = linkColor,
+                                    fontWeight = FontWeight.Bold,
+                                ),
+                            ) {
+                                append("[$id]")
+                            }
+                            i = close + 1
+                        } else {
+                            append(src[i])
+                            i++
+                        }
+                    }
+
+                    // [text](url)
+                    src.startsWith("[", i) -> {
+                        val close = src.indexOf(']', i)
+                        if (close != -1 && close + 1 < src.length && src[close + 1] == '(') {
+                            val urlEnd = src.indexOf(')', close + 2)
+                            if (urlEnd != -1) {
+                                val label = src.substring(i + 1, close)
+                                val url = src.substring(close + 2, urlEnd)
+                                pushLink(LinkAnnotation.Url(url))
+                                withStyle(
+                                    SpanStyle(
+                                        color = linkColor,
+                                        textDecoration = TextDecoration.Underline,
+                                    ),
+                                ) {
+                                    append(label)
+                                }
+                                pop()
+                                i = urlEnd + 1
+                            } else {
+                                append(src[i])
+                                i++
+                            }
+                        } else {
+                            append(src[i])
+                            i++
+                        }
+                    }
+
+                    // `inline code`
+                    src.startsWith("`", i) -> {
+                        val end = src.indexOf('`', i + 1)
+                        if (end != -1) {
+                            withStyle(
+                                SpanStyle(
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 13.sp,
+                                    background = textColor.copy(alpha = 0.08f),
+                                ),
+                            ) {
+                                append(src.substring(i + 1, end))
+                            }
+                            i = end + 1
+                        } else {
+                            append(src[i])
+                            i++
+                        }
+                    }
+
+                    // bare URL
+                    URL_PATTERN.matchAt(src, i) != null -> {
+                        val match = URL_PATTERN.matchAt(src, i)!!
+                        val url = match.value
+                        pushLink(LinkAnnotation.Url(url))
                         withStyle(
                             SpanStyle(
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 13.sp,
-                                background = textColor.copy(alpha = 0.08f),
+                                color = linkColor,
+                                textDecoration = TextDecoration.Underline,
                             ),
                         ) {
-                            append(src.substring(i + 1, end))
+                            append(url)
                         }
-                        i = end + 1
-                    } else {
+                        pop()
+                        i = match.range.last + 1
+                    }
+
+                    // search highlight
+                    searchQuery.isNotEmpty() &&
+                        src.regionMatches(i, searchQuery, 0, searchQuery.length, ignoreCase = true) -> {
+                        withStyle(
+                            SpanStyle(
+                                background = searchHighlightColor.first,
+                                color = searchHighlightColor.second,
+                            ),
+                        ) {
+                            append(src.substring(i, i + searchQuery.length))
+                        }
+                        i += searchQuery.length
+                    }
+
+                    else -> {
                         append(src[i])
                         i++
                     }
                 }
-
-                // bare URL
-                URL_PATTERN.matchAt(src, i) != null -> {
-                    val match = URL_PATTERN.matchAt(src, i)!!
-                    val url = match.value
-                    pushLink(LinkAnnotation.Url(url))
-                    withStyle(
-                        SpanStyle(
-                            color = linkColor,
-                            textDecoration = TextDecoration.Underline,
-                        ),
-                    ) {
-                        append(url)
-                    }
-                    pop()
-                    i = match.range.last + 1
-                }
-
-                // search highlight
-                searchQuery.isNotEmpty() &&
-                    src.regionMatches(i, searchQuery, 0, searchQuery.length, ignoreCase = true) -> {
-                    withStyle(
-                        SpanStyle(
-                            background = searchHighlightColor.first,
-                            color = searchHighlightColor.second,
-                        ),
-                    ) {
-                        append(src.substring(i, i + searchQuery.length))
-                    }
-                    i += searchQuery.length
-                }
-
-                else -> {
-                    append(src[i])
-                    i++
-                }
             }
+        }
+
+        if (bold) {
+            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                body()
+            }
+        } else {
+            body()
         }
     }
 }

@@ -69,6 +69,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import com.m57.hermescontrol.ui.chat.isRtlText
+import com.m57.hermescontrol.ui.chat.LocalUserBubbleColor
 import com.m57.hermescontrol.R
 import com.m57.hermescontrol.data.model.Attachment
 import com.m57.hermescontrol.theme.DarkOnSurface
@@ -103,6 +104,12 @@ fun ChatBubble(
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val maxBubbleWidth = screenWidth * 0.80f
 
+    // User-picked bubble color override (rtl-design-upgrade).
+    val customColorArgb = LocalUserBubbleColor.current
+    val customColor = remember(customColorArgb) {
+        customColorArgb?.let { Color(it.toULong()) }
+    }
+
     AnimatedVisibility(
         visible = true,
         enter =
@@ -114,7 +121,7 @@ fun ChatBubble(
         val clipboard = LocalClipboard.current
         val scope = rememberCoroutineScope()
         var copied by remember { mutableStateOf(false) }
-        
+
         // Resolve direction for alignment (so user's bubble wraps/aligns correctly if Arabic)
         val isRtl = remember(message.content) { isRtlText(message.content) }
         val layoutDir = if (isRtl) LayoutDirection.Rtl else LayoutDirection.Ltr
@@ -149,21 +156,8 @@ fun ChatBubble(
                     .padding(horizontal = 8.dp, vertical = 2.dp),
             contentAlignment = Alignment.CenterEnd,
         ) {
-            val primary = MaterialTheme.colorScheme.primary
-            val userBubbleTextColor =
-                if (primary.luminance() > 0.5f) {
-                    if (MaterialTheme.colorScheme.onPrimary.luminance() < 0.5f) {
-                        MaterialTheme.colorScheme.onPrimary
-                    } else {
-                        LightOnSurface
-                    }
-                } else {
-                    if (MaterialTheme.colorScheme.onPrimary.luminance() > 0.5f) {
-                        MaterialTheme.colorScheme.onPrimary
-                    } else {
-                        DarkOnSurface
-                    }
-                }
+            val bubbleColor = customColor ?: MaterialTheme.colorScheme.primary
+            val onBubble = if (bubbleColor.luminance() > 0.5f) LightOnSurface else DarkOnSurface
             Box {
                 Surface(
                     modifier =
@@ -171,24 +165,25 @@ fun ChatBubble(
                             .widthIn(max = maxBubbleWidth)
                             .clip(
                                 RoundedCornerShape(
-                                    topStart = 16.dp,
-                                    topEnd = 16.dp,
-                                    bottomStart = if (isRtl) 4.dp else 16.dp,
-                                    bottomEnd = if (isRtl) 16.dp else 4.dp,
+                                    topStart = 18.dp,
+                                    topEnd = 18.dp,
+                                    bottomStart = if (isRtl) 6.dp else 18.dp,
+                                    bottomEnd = if (isRtl) 18.dp else 6.dp,
                                 ),
-                            ).background(color = primary)
+                            ).background(color = bubbleColor)
                             .testTag("chat_bubble_user"),
                     color = Color.Transparent,
                     tonalElevation = 0.dp,
+                    shadowElevation = 1.dp,
                 ) {
                     androidx.compose.runtime.CompositionLocalProvider(
                         LocalLayoutDirection provides layoutDir,
                     ) {
-                    Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+                    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
                         SelectionContainer {
                             Text(
                                 text = highlightedText,
-                                color = userBubbleTextColor,
+                                color = onBubble,
                                 style = MaterialTheme.typography.bodyMedium,
                             )
                         }
@@ -198,7 +193,7 @@ fun ChatBubble(
                             message.attachments.forEach { attachment ->
                                 InlineAttachment(
                                     attachment = attachment,
-                                    textColor = userBubbleTextColor,
+                                    textColor = onBubble,
                                     onOpen = { onOpenAttachment(it) },
                                     onSave = { onSaveAttachment(it) },
                                     savingPath = savingAttachmentPath,
@@ -232,7 +227,7 @@ fun ChatBubble(
                                         imageVector = if (copied) Icons.Filled.Check else Icons.Filled.ContentCopy,
                                         contentDescription = stringResource(R.string.content_desc_copy),
                                         modifier = Modifier.size(12.dp),
-                                        tint = userBubbleTextColor.copy(alpha = 0.7f),
+                                        tint = onBubble.copy(alpha = 0.7f),
                                     )
                                 }
                                 Spacer(modifier = Modifier.width(2.dp))
@@ -242,7 +237,7 @@ fun ChatBubble(
                                             message.timestamp,
                                             DateFormat.is24HourFormat(LocalContext.current),
                                         ),
-                                    color = userBubbleTextColor.copy(alpha = 0.6f),
+                                    color = onBubble.copy(alpha = 0.6f),
                                     style = MaterialTheme.typography.labelSmall,
                                 )
                             }
