@@ -644,7 +644,7 @@ private fun MarkdownTable(
     val headerBg = textColor.copy(alpha = 0.08f)
     val alignments = block.alignments
     val linkColor = MaterialTheme.colorScheme.primary
-    val highlightColors = com.m57.hermescontrol.theme.searchHighlightColors()
+    val highlightColors = com.m57.hermescontrol.theme.searchHighlightColors(LocalHermesStatusColors.current)
     // Lightweight markdown pipeline for table cells: only the inline formatters
     // we actually need inside cells (bold/italic/code/links) — list parsing is
     // skipped on purpose because a list inside a table cell is rare and would
