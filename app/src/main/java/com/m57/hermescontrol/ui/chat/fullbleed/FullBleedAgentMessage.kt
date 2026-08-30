@@ -76,7 +76,7 @@ internal fun FullBleedAgentMessage(
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
     var copied by remember { mutableStateOf(false) }
-    
+
     // Resolve overall direction for the message container
     val isRtl = remember(message.content) { isRtlText(message.content) }
     val layoutDir = if (isRtl) LayoutDirection.Rtl else LayoutDirection.Ltr

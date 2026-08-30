@@ -37,7 +37,6 @@ data class ServerStoreState(
     val lastUpdateCheckTimestamp: Long = 0L,
     // Tag the user explicitly dismissed from the update banner / dialog (e.g. "v1.24.2").
     val dismissedUpdateTag: String? = null,
-
     // ── Chat UI customization (rtl-design-upgrade) ────────────────────
     // User-selected chat background URI as a string. null = no custom background.
     val chatBackgroundUri: String? = null,

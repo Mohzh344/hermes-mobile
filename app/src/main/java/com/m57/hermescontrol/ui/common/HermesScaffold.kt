@@ -24,7 +24,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -260,7 +259,7 @@ private fun Modifier.dynamicTopBarPadding(
  * tighter shape on scroll (handled by [scrollBehavior] state). Layout:
  *
  *  ┌─────────────────────────────────────────────────────────────┐
- *  │ [bubble]   <floating title text>                  [bubbles]  │
+ *  │ [bubble]   <floating title text>                 [bubbles]  │
  *  └─────────────────────────────────────────────────────────────┘
  *
  * The icons themselves sit inside small [GlassBubble] "pills" so they read
