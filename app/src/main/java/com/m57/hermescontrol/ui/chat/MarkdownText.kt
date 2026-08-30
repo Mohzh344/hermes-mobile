@@ -541,7 +541,7 @@ fun MarkdownText(
                     }
                 }
             }
-    }
+        }
     } // end CompositionLocalProvider
 }
 
