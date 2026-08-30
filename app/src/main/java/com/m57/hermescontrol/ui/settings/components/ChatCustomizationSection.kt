@@ -170,7 +170,7 @@ internal fun ChatCustomizationSection() {
                 )
                 Text(
                     text = stringResource(R.string.settings_chat_background_active),
-                    color = MaterialTheme.colorScheme.onScrim,
+                    color = MaterialTheme.colorScheme.inverseOnSurface,
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                     modifier =
                         Modifier

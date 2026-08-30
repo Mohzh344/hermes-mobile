@@ -59,13 +59,16 @@ fun GlassSurface(
                 .clip(RoundedCornerShape(cornerRadius))
                 .background(tint.copy(alpha = baseAlpha))
                 .drawBehind {
+                    val highlightColor =
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = highlightAlpha)
+                    val borderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = borderAlpha)
                     // Subtle diagonal highlight (top-left → bottom-right).
                     drawRoundRect(
                         brush =
                             Brush.linearGradient(
                                 colors =
                                     listOf(
-                                        MaterialTheme.colorScheme.onSurface.copy(alpha = highlightAlpha),
+                                        highlightColor,
                                         Color.Transparent,
                                     ),
                                 start = Offset.Zero,
@@ -105,12 +108,14 @@ fun GlassBubble(
                 .background(tint.copy(alpha = baseAlpha))
                 .drawBehind {
                     val cr = cornerRadius.toPx()
+                    val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f)
+                    val borderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.20f)
                     drawRoundRect(
                         brush =
                             Brush.linearGradient(
                                 colors =
                                     listOf(
-                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f),
+                                        highlightColor,
                                         Color.Transparent,
                                     ),
                                 start = Offset.Zero,
@@ -120,7 +125,7 @@ fun GlassBubble(
                         size = Size(size.toPx(), size.toPx()),
                     )
                     drawRoundRect(
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.20f),
+                        color = borderColor,
                         cornerRadius = CornerRadius(cr, cr),
                         style = Stroke(width = 1.dp.toPx()),
                     )
