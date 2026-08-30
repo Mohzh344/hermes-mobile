@@ -226,11 +226,12 @@ fun MarkdownText(
                 is MdBlock.Bullet -> {
                     val indent = (block.level * 16).dp
                     val bulletDir = resolveDirection(block.text)
-                    val bulletColors = listOf(
-                        MaterialTheme.colorScheme.primary,
-                        MaterialTheme.colorScheme.tertiary,
-                        MaterialTheme.colorScheme.secondary,
-                    )
+                    val bulletColors =
+                        listOf(
+                            MaterialTheme.colorScheme.primary,
+                            MaterialTheme.colorScheme.tertiary,
+                            MaterialTheme.colorScheme.secondary,
+                        )
                     val bulletColor = bulletColors[block.level % bulletColors.size]
                     androidx.compose.runtime.CompositionLocalProvider(
                         LocalLayoutDirection provides bulletDir,
@@ -261,9 +262,10 @@ fun MarkdownText(
                                 text = block.text,
                                 textColor = textColor,
                                 latexMeasurer = latexMeasurer,
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    textDirection = TextDirection.Content,
-                                ),
+                                style =
+                                    MaterialTheme.typography.bodyMedium.copy(
+                                        textDirection = TextDirection.Content,
+                                    ),
                                 searchQuery = searchQuery,
                                 isCurrentMatch = isCurrentMatch,
                                 linkColor = linkColor,
@@ -300,9 +302,10 @@ fun MarkdownText(
                                 text = block.text,
                                 textColor = textColor,
                                 latexMeasurer = latexMeasurer,
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    textDirection = TextDirection.Content,
-                                ),
+                                style =
+                                    MaterialTheme.typography.bodyMedium.copy(
+                                        textDirection = TextDirection.Content,
+                                    ),
                                 searchQuery = searchQuery,
                                 isCurrentMatch = isCurrentMatch,
                                 linkColor = linkColor,
@@ -351,9 +354,10 @@ fun MarkdownText(
                                 text = block.text,
                                 textColor = textColor,
                                 latexMeasurer = latexMeasurer,
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    textDirection = TextDirection.Content,
-                                ),
+                                style =
+                                    MaterialTheme.typography.bodyMedium.copy(
+                                        textDirection = TextDirection.Content,
+                                    ),
                                 searchQuery = searchQuery,
                                 isCurrentMatch = isCurrentMatch,
                                 linkColor = linkColor,
@@ -386,10 +390,11 @@ fun MarkdownText(
                                 text = block.text,
                                 textColor = quoteTextColor,
                                 latexMeasurer = latexMeasurer,
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontStyle = FontStyle.Italic,
-                                    textDirection = TextDirection.Content,
-                                ),
+                                style =
+                                    MaterialTheme.typography.bodyMedium.copy(
+                                        fontStyle = FontStyle.Italic,
+                                        textDirection = TextDirection.Content,
+                                    ),
                                 searchQuery = searchQuery,
                                 isCurrentMatch = isCurrentMatch,
                                 linkColor = linkColor,
@@ -521,10 +526,11 @@ fun MarkdownText(
                             text = block.text,
                             textColor = textColor,
                             latexMeasurer = latexMeasurer,
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                textDirection = TextDirection.Content,
-                                lineHeight = 24.sp,
-                            ),
+                            style =
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    textDirection = TextDirection.Content,
+                                    lineHeight = 24.sp,
+                                ),
                             searchQuery = searchQuery,
                             isCurrentMatch = isCurrentMatch,
                             linkColor = linkColor,
