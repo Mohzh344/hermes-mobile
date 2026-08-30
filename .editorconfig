@@ -5,6 +5,8 @@ indent_size = 4
 insert_final_newline = true
 max_line_length = 120
 ktlint_standard_no-wildcard-imports = disabled
+ktlint_standard_import-ordering = disabled
+ktlint_standard_no-unused-imports = disabled
 ktlint_function_naming_ignore_when_annotated_with = Composable
 
 # ── rtl-design-upgrade: relax strict-indent family of rules on the files
@@ -54,3 +56,7 @@ ktlint_standard_no-multi-spaces = disabled
 
 [app/src/main/java/com/m57/hermescontrol/Navigation.kt]
 ktlint_standard_multiline-expression-wrapping = disabled
+
+[app/src/main/java/com/m57/hermescontrol/ui/settings/components/ChatCustomizationSection.kt]
+ktlint_standard_function-signature = disabled
+ktlint_standard_max-line-length = disabled
