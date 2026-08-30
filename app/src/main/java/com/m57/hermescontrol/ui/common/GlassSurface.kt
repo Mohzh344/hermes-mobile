@@ -53,15 +53,14 @@ fun GlassSurface(
     content: @Composable () -> Unit,
 ) {
     val baseAlpha = if (MaterialTheme.colorScheme.surface.luminanceOrDefault() > 0.5f) 0.72f else 0.55f
+    val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = highlightAlpha)
+    val borderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = borderAlpha)
     Box(
         modifier =
             modifier
                 .clip(RoundedCornerShape(cornerRadius))
                 .background(tint.copy(alpha = baseAlpha))
                 .drawBehind {
-                    val highlightColor =
-                        MaterialTheme.colorScheme.onSurface.copy(alpha = highlightAlpha)
-                    val borderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = borderAlpha)
                     // Subtle diagonal highlight (top-left → bottom-right).
                     drawRoundRect(
                         brush =
@@ -79,7 +78,7 @@ fun GlassSurface(
                     )
                 }.border(
                     width = 1.dp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = borderAlpha),
+                    color = borderColor,
                     shape = RoundedCornerShape(cornerRadius),
                 ),
     ) {
@@ -101,6 +100,8 @@ fun GlassBubble(
     content: @Composable () -> Unit,
 ) {
     val baseAlpha = if (MaterialTheme.colorScheme.surface.luminanceOrDefault() > 0.5f) 0.80f else 0.62f
+    val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f)
+    val borderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.20f)
     Box(
         modifier =
             modifier
@@ -108,8 +109,6 @@ fun GlassBubble(
                 .background(tint.copy(alpha = baseAlpha))
                 .drawBehind {
                     val cr = cornerRadius.toPx()
-                    val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f)
-                    val borderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.20f)
                     drawRoundRect(
                         brush =
                             Brush.linearGradient(
