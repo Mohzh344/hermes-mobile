@@ -77,7 +77,6 @@ import com.m57.hermescontrol.theme.HermesStatusColors
 import com.m57.hermescontrol.theme.LightOnSurface
 import com.m57.hermescontrol.theme.LocalHermesStatusColors
 import com.m57.hermescontrol.theme.onColorFor
-import com.m57.hermescontrol.ui.chat.isRtlText
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.Instant

@@ -154,7 +154,7 @@ fun MarkdownText(
                             onCopy = { /* clipboard handled internally */ },
                         )
                     }
-    
+
                     is MdBlock.Math -> {
                         LatexAutoWrap(
                             latex = block.latex,
@@ -167,14 +167,14 @@ fun MarkdownText(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
                         )
                     }
-    
+
                     is MdBlock.Hr -> {
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = 8.dp),
                             color = textColor.copy(alpha = 0.25f),
                         )
                     }
-    
+
                     is MdBlock.Heading -> {
                         val fontSize =
                             when (block.level) {
@@ -222,7 +222,7 @@ fun MarkdownText(
                             }
                         }
                     }
-    
+
                     is MdBlock.Bullet -> {
                         val indent = (block.level * 16).dp
                         val bulletDir = resolveDirection(block.text)
@@ -275,7 +275,7 @@ fun MarkdownText(
                             }
                         }
                     }
-    
+
                     is MdBlock.Ordered -> {
                         val indent = (block.level * 16).dp
                         val orderedDir = resolveDirection(block.text)
@@ -315,7 +315,7 @@ fun MarkdownText(
                             }
                         }
                     }
-    
+
                     is MdBlock.Task -> {
                         val indent = (block.level * 16).dp
                         val taskDir = resolveDirection(block.text)
@@ -367,7 +367,7 @@ fun MarkdownText(
                             }
                         }
                     }
-    
+
                     is MdBlock.Quote -> {
                         val quoteDir = resolveDirection(block.text)
                         androidx.compose.runtime.CompositionLocalProvider(
@@ -404,7 +404,7 @@ fun MarkdownText(
                             }
                         }
                     }
-    
+
                     is MdBlock.Video -> {
                         val resolvedUri = remember(block.uri) { resolveImageUrl(block.uri) }
                         var showVideoDialog by remember { mutableStateOf(false) }
@@ -426,7 +426,7 @@ fun MarkdownText(
                             }
                         }
                     }
-    
+
                     is MdBlock.Image -> {
                         val model: Any = remember(block.uri) { resolveImageUrl(block.uri) }
                         val isGif =
@@ -456,7 +456,7 @@ fun MarkdownText(
                             )
                         }
                     }
-    
+
                     is MdBlock.DefList -> {
                         Column(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
                             block.items.forEach { item ->
@@ -477,11 +477,11 @@ fun MarkdownText(
                             }
                         }
                     }
-    
+
                     is MdBlock.Table -> {
                         MarkdownTable(block = block, textColor = textColor)
                     }
-    
+
                     is MdBlock.Footnotes -> {
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = 6.dp),
@@ -516,7 +516,7 @@ fun MarkdownText(
                             }
                         }
                     }
-    
+
                     is MdBlock.Paragraph -> {
                         val paraDir = resolveDirection(block.text)
                         androidx.compose.runtime.CompositionLocalProvider(
