@@ -68,6 +68,7 @@ import com.m57.hermescontrol.data.ws.CommandBlocklist
 import com.m57.hermescontrol.data.ws.CommandCatalog
 import com.m57.hermescontrol.ui.chat.ChatInputPolicy
 import com.m57.hermescontrol.ui.common.BotAvatar
+import com.m57.hermescontrol.ui.common.GlassSurface
 
 /**
  * The chat input bar with a two-row layout: input+send on top,
@@ -416,6 +417,9 @@ fun ChatInputBar(
                     onModelTap = onModelTap,
                     onReasoningSelected = onReasoningTap,
                     onMicTap = onMicTap,
+                    onCameraTap = onCameraTap,
+                    onGalleryTap = onImageTap,
+                    onFileTap = onFileTap,
                     modifier = Modifier.testTag("chat_composer_toolbar"),
                     canDisableReasoning = canDisableReasoning,
                     supportsReasoning = supportsReasoning,

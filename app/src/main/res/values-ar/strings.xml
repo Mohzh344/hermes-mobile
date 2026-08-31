@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Arabic translations for the core navigation/chat UI.
+  Only the keys that appear in user-facing chrome are translated here;
+  dynamic content (chat responses, tool outputs, etc.) is produced by the
+  model and rendered in its original language.
+-->
+<resources>
+    <string name="app_name">Hermes Mobile</string>
+
+    <!-- Navigation chrome -->
+    <string name="content_desc_back">رجوع</string>
+    <string name="content_desc_open_drawer">فتح قائمة التنقل</string>
+    <string name="content_desc_refresh">تحديث</string>
+    <string name="content_desc_clear_search">مسح البحث</string>
+    <string name="content_desc_new_chat">محادثة جديدة</string>
+    <string name="content_desc_scroll_to_bottom">التمرير للأسفل</string>
+    <string name="content_desc_copy">نسخ</string>
+    <string name="content_desc_edit">تعديل</string>
+
+    <!-- Drawer -->
+    <string name="nav_drawer_title">Hermes</string>
+    <string name="nav_drawer_subtitle">التحكم بوكيل الذكاء الاصطناعي</string>
+    <string name="nav_drawer_section_converse">محادثة</string>
+    <string name="nav_drawer_section_automate">أتمتة</string>
+    <string name="nav_drawer_section_configure">الإعدادات</string>
+
+    <!-- Chat composer -->
+    <string name="chat_attach_file">إرفاق ملف</string>
+    <string name="chat_attach_image">اختر من المعرض</string>
+    <string name="chat_attach_camera">التقاط صورة</string>
+    <string name="chat_attach_document">اختر مستندًا</string>
+    <string name="chat_attach_remove_desc">إزالة المرفق</string>
+    <string name="chat_composer_hint">رسالة…</string>
+
+    <!-- Status -->
+    <string name="chat_status_reconnecting">إعادة الاتصال…</string>
+    <string name="chat_status_disconnected">انقطع الاتصال</string>
+
+    <!-- Search -->
+    <string name="chat_action_search">بحث</string>
+    <string name="chat_action_close_search">إغلاق البحث</string>
+
+    <!-- Settings sections -->
+    <string name="settings_appearance">المظهر</string>
+    <string name="settings_chat">المحادثة</string>
+    <string name="settings_connection">الاتصال</string>
+    <string name="settings_behavior">السلوك</string>
+    <string name="settings_language">اللغة</string>
+    <string name="settings_about">حول التطبيق</string>
+
+    <!-- Misc -->
+    <string name="press_back_again_to_exit">اضغط رجوع مرة أخرى للخروج</string>
+</resources>

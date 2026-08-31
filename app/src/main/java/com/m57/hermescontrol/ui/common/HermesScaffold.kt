@@ -2,12 +2,15 @@ package com.m57.hermescontrol.ui.common
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
@@ -28,6 +31,7 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.layout
@@ -35,6 +39,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.m57.hermescontrol.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -147,6 +152,14 @@ fun HermesScaffold(
     pinTopBar: Boolean = false,
     snackbarHost: @Composable () -> Unit = {},
     actions: @Composable () -> Unit = {},
+    /**
+     * When true, the top bar renders as a floating glass pill that sits
+     * slightly below the system status bar (issue: avoid the front camera /
+     * OS clock). When false, the original TopAppBar is used.
+     *
+     * Default: true (floating mode is the new default since v1.26).
+     */
+    floatingTopBar: Boolean = true,
     content: @Composable (PaddingValues) -> Unit,
 ) {
     val gestureController = LocalDrawerGestureController.current
@@ -164,54 +177,116 @@ fun HermesScaffold(
         contentWindowInsets = WindowInsets.navigationBars,
         snackbarHost = { snackbarHost() },
         topBar = {
-            TopAppBar(
-                title = title,
-                navigationIcon = {
-                    when (val icon = navigationIcon) {
-                        is NavIcon.Back -> {
-                            IconButton(onClick = icon.onBack) {
+            if (floatingTopBar) {
+                // Floating glass pill: full-bleed on top, then status-bar
+                // padding, then 8dp of empty space, then the actual pill.
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(top = 8.dp, start = 12.dp, end = 12.dp),
+                ) {
+                    GlassSurface(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        paddingValues = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            // Navigation icon column
+                            when (val icon = navigationIcon) {
+                                is NavIcon.Back -> {
+                                    IconButton(onClick = icon.onBack) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                            contentDescription = stringResource(R.string.content_desc_back),
+                                            modifier = Modifier.testTag("back_button"),
+                                        )
+                                    }
+                                }
+
+                                is NavIcon.Menu -> {
+                                    IconButton(onClick = icon.onOpen) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Menu,
+                                            contentDescription = stringResource(R.string.content_desc_open_drawer),
+                                            modifier = Modifier.testTag("menu_button"),
+                                        )
+                                    }
+                                }
+
+                                null -> { /* no navigation icon */ }
+                            }
+                            // Title (weight 1f)
+                            Box(modifier = Modifier.weight(1f)) {
+                                title()
+                            }
+                            // Trailing actions
+                            if (onRefresh != null) {
+                                IconButton(onClick = onRefresh) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Refresh,
+                                        contentDescription = stringResource(R.string.content_desc_refresh),
+                                        modifier = Modifier.testTag("refresh_button"),
+                                    )
+                                }
+                            }
+                            actions()
+                        }
+                    }
+                }
+            } else {
+                TopAppBar(
+                    title = title,
+                    navigationIcon = {
+                        when (val icon = navigationIcon) {
+                            is NavIcon.Back -> {
+                                IconButton(onClick = icon.onBack) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = stringResource(R.string.content_desc_back),
+                                        modifier = Modifier.testTag("back_button"),
+                                    )
+                                }
+                            }
+
+                            is NavIcon.Menu -> {
+                                IconButton(onClick = icon.onOpen) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Menu,
+                                        contentDescription = stringResource(R.string.content_desc_open_drawer),
+                                        modifier = Modifier.testTag("menu_button"),
+                                    )
+                                }
+                            }
+
+                            null -> { /* no navigation icon */ }
+                        }
+                    },
+                    actions = {
+                        if (onRefresh != null) {
+                            IconButton(onClick = onRefresh) {
                                 Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = stringResource(R.string.content_desc_back),
-                                    modifier = Modifier.testTag("back_button"),
+                                    imageVector = Icons.Filled.Refresh,
+                                    contentDescription = stringResource(R.string.content_desc_refresh),
+                                    modifier = Modifier.testTag("refresh_button"),
                                 )
                             }
                         }
-
-                        is NavIcon.Menu -> {
-                            IconButton(onClick = icon.onOpen) {
-                                Icon(
-                                    imageVector = Icons.Filled.Menu,
-                                    contentDescription = stringResource(R.string.content_desc_open_drawer),
-                                    modifier = Modifier.testTag("menu_button"),
-                                )
-                            }
-                        }
-
-                        null -> { /* no navigation icon */ }
-                    }
-                },
-                actions = {
-                    if (onRefresh != null) {
-                        IconButton(onClick = onRefresh) {
-                            Icon(
-                                imageVector = Icons.Filled.Refresh,
-                                contentDescription = stringResource(R.string.content_desc_refresh),
-                                modifier = Modifier.testTag("refresh_button"),
-                            )
-                        }
-                    }
-                    actions()
-                },
-                colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        titleContentColor = MaterialTheme.colorScheme.onSurface,
-                        navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                        actionIconContentColor = MaterialTheme.colorScheme.onSurface,
-                    ),
-                scrollBehavior = scrollBehavior,
-            )
+                        actions()
+                    },
+                    colors =
+                        TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            titleContentColor = MaterialTheme.colorScheme.onSurface,
+                            navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                            actionIconContentColor = MaterialTheme.colorScheme.onSurface,
+                        ),
+                    scrollBehavior = scrollBehavior,
+                )
+            }
         },
         containerColor = MaterialTheme.colorScheme.background,
     ) { paddingValues ->

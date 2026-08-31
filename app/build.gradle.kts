@@ -25,6 +25,18 @@ android {
         versionCode = (project.findProperty("versionCode") as? String)?.toIntOrNull() ?: 1
         versionName = (project.findProperty("versionName") as? String) ?: "1.0-dev"
 
+        // Restrict native libraries to arm64 only (covers the vast majority of
+        // modern Android phones and most tablets). Override with -PallAbis=true
+        // if a wider matrix is ever needed.
+        val allAbis = (project.findProperty("allAbis") as? String)?.toBoolean() ?: false
+        ndk {
+            if (allAbis) {
+                abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+            } else {
+                abiFilters += listOf("arm64-v8a")
+            }
+        }
+
         // Embed git commit SHA for the About card in Settings
         val gitSha =
             providers.exec {

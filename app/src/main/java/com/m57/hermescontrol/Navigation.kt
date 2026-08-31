@@ -5,18 +5,22 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.HorizontalDivider
@@ -39,6 +43,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -54,6 +59,8 @@ import com.m57.hermescontrol.data.ws.HermesWsClient
 import com.m57.hermescontrol.theme.LocalHermesStatusColors
 import com.m57.hermescontrol.ui.common.DisableDrawerGestures
 import com.m57.hermescontrol.ui.common.DrawerGestureController
+import com.m57.hermescontrol.ui.common.GlassPill
+import com.m57.hermescontrol.ui.common.GlassSurface
 import com.m57.hermescontrol.ui.common.LocalDrawerGestureController
 import com.m57.hermescontrol.ui.plugins.MemoryProviderDetailScreen
 import com.m57.hermescontrol.ui.settings.SettingsAboutPage
@@ -240,44 +247,61 @@ fun MainNavigation(sessionId: String? = null) {
                             ConnectionStatus.AUTH_EXPIRED,
                             -> LocalHermesStatusColors.current.error
                         }
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 2.dp),
+
+                    // Top status-bar padding so the header never sits flush against
+                    // the edge of the system status bar.
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .statusBarsPadding()
+                            .padding(top = 8.dp, start = 16.dp, end = 16.dp, bottom = 12.dp),
                     ) {
-                        Text(
-                            text = stringResource(R.string.nav_drawer_title),
-                            style =
-                                MaterialTheme.typography.headlineSmall.copy(
-                                    fontWeight = FontWeight.Bold,
-                                ),
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Box(
-                            modifier =
-                                Modifier
-                                    .size(10.dp)
-                                    .background(color = statusColor, shape = CircleShape),
-                        )
+                        // Header pill: rounded glass block with app name + status dot
+                        GlassPill(
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.nav_drawer_title),
+                                    style = MaterialTheme.typography.titleLarge.copy(
+                                        fontWeight = FontWeight.Bold,
+                                    ),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .size(12.dp)
+                                        .clip(CircleShape)
+                                        .background(color = statusColor),
+                                )
+                            }
+                        }
                     }
                     Text(
                         text = stringResource(R.string.nav_drawer_subtitle),
-                        modifier = Modifier.padding(start = 16.dp, bottom = 8.dp, end = 16.dp),
+                        modifier = Modifier.padding(start = 24.dp, bottom = 12.dp, end = 16.dp),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                    )
 
                     for (section in DrawerSection.entries) {
                         Text(
                             text = stringResource(section.titleRes).uppercase(),
-                            modifier =
-                                Modifier.padding(
-                                    start = 16.dp,
-                                    top = 8.dp,
-                                    bottom = 4.dp,
-                                    end = 16.dp,
-                                ),
+                            modifier = Modifier.padding(
+                                start = 24.dp,
+                                top = 16.dp,
+                                bottom = 8.dp,
+                                end = 16.dp,
+                            ),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.SemiBold,
@@ -293,20 +317,24 @@ fun MainNavigation(sessionId: String? = null) {
                                         scope.launch { drawerState.close() }
                                         NavigationController.navigateTo(entry.key)
                                     },
-                                    colors =
-                                        NavigationDrawerItemDefaults.colors(
-                                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                            selectedTextColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                            selectedIconColor = MaterialTheme.colorScheme.primary,
-                                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        ),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = NavigationDrawerItemDefaults.colors(
+                                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                        selectedTextColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    ),
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
                                 )
                             }
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                    )
                     Spacer(modifier = Modifier.height(12.dp))
                 }
             },
