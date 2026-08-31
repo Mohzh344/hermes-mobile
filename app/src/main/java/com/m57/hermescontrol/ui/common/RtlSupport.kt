@@ -3,7 +3,6 @@ package com.m57.hermescontrol.ui.common
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.text.intl.LocaleList
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.LayoutDirection
 import java.util.Locale
@@ -68,4 +67,6 @@ fun sanitizeBidi(text: String): String =
  * the hint, or the system locale otherwise. Currently a thin wrapper to keep
  * imports localized to this file.
  */
-fun defaultLocaleList(): LocaleList = LocaleList.getDefault()
+@Suppress("unused")
+fun defaultLocaleList(): androidx.compose.ui.text.intl.LocaleList =
+    androidx.compose.ui.text.intl.LocaleList.current

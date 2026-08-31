@@ -136,4 +136,4 @@ fun GlassPill(
  * sidebar edges to soften the transition between opaque and translucent
  * regions.
  */
-fun glassDividerHeight(): Dp = min(1.dp, 1.dp)
+fun glassDividerHeight(): Dp = 1.dp

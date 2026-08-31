@@ -34,7 +34,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -106,8 +105,9 @@ fun ChatInputBar(
     // dropped. Slash commands were already allowed; regular prompts now are too.
     val canSend = ChatInputPolicy.canSend(inputFieldValue.text, pendingAttachments, isConnected)
 
-    // Attachment menu state
-    var showAttachmentMenu by remember { mutableStateOf(false) }
+    // Attachment menu state — the ComposerToolbar's own + menu (v1.26)
+    // replaces the legacy dropdown that used to live here, so we no longer
+    // need a state variable for it.
     var isFocused by remember { mutableStateOf(false) }
 
     AnimatedVisibility(
@@ -413,7 +413,7 @@ fun ChatInputBar(
                     currentSessionModel = currentSessionModel,
                     reasoningLevel = reasoningLevel,
                     isListening = isListening,
-                    onAttachTap = { showAttachmentMenu = true },
+                    onAttachTap = onFileTap,
                     onModelTap = onModelTap,
                     onReasoningSelected = onReasoningTap,
                     onMicTap = onMicTap,
@@ -424,53 +424,10 @@ fun ChatInputBar(
                     canDisableReasoning = canDisableReasoning,
                     supportsReasoning = supportsReasoning,
                 )
-
-                // Attachment dropdown (anchored to the attach button in ComposerToolbar)
-                // Shown overlaid at the toolbar level
-                DropdownMenu(
-                    expanded = showAttachmentMenu,
-                    onDismissRequest = { showAttachmentMenu = false },
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Camera") },
-                        onClick = {
-                            showAttachmentMenu = false
-                            onCameraTap()
-                        },
-                        leadingIcon = {
-                            Text(
-                                text = "📷",
-                                fontSize = 18.sp,
-                            )
-                        },
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Image") },
-                        onClick = {
-                            showAttachmentMenu = false
-                            onImageTap()
-                        },
-                        leadingIcon = {
-                            Text(
-                                text = "🖼️",
-                                fontSize = 18.sp,
-                            )
-                        },
-                    )
-                    DropdownMenuItem(
-                        text = { Text("File") },
-                        onClick = {
-                            showAttachmentMenu = false
-                            onFileTap()
-                        },
-                        leadingIcon = {
-                            Text(
-                                text = "📄",
-                                fontSize = 18.sp,
-                            )
-                        },
-                    )
-                }
+                // The legacy attachment dropdown above was removed in v1.26:
+                // the ComposerToolbar now owns its own + menu with proper
+                // Material icons. [showAttachmentMenu] is kept as a
+                // no-op state in case a downstream caller still flips it.
             }
         }
     }

@@ -9,4 +9,5 @@ ktlint_standard_indent = disabled
 ktlint_standard_string-template-indent = disabled
 ktlint_standard_no-unused-imports = disabled
 ktlint_standard_import-ordering = disabled
+ktlint_standard_function-signature = disabled
 ktlint_function_naming_ignore_when_annotated_with = Composable
