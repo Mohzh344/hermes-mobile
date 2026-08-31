@@ -25,6 +25,22 @@ android {
         versionCode = (project.findProperty("versionCode") as? String)?.toIntOrNull() ?: 1
         versionName = (project.findProperty("versionName") as? String) ?: "1.0-dev"
 
+        // Restrict native libraries to arm64-v8a only by default — that
+        // covers the vast majority of modern Android phones and tablets and
+        // keeps release APKs small. Set `-Parm64Only=false` to opt into
+        // the full ABI matrix (needed for the x86_64 emulator that the
+        // Instrumented Tests job uses; the GitHub Actions runner is x86_64
+        // and cannot run arm64-only APKs on its AVD).
+        val arm64Only = (project.findProperty("arm64Only") as? String)?.toBoolean() ?: true
+        ndk {
+            abiFilters +=
+                if (arm64Only) {
+                    listOf("arm64-v8a")
+                } else {
+                    listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+                }
+        }
+
         // Embed git commit SHA for the About card in Settings
         val gitSha =
             providers.exec {

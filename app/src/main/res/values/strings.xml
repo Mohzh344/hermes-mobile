@@ -276,6 +276,7 @@
     <string name="settings_item_language">Language</string>
     <string name="language_system">System</string>
     <string name="language_english">English</string>
+    <string name="language_arabic">العربية</string>
     <string name="language_chinese">简体中文</string>
     <string name="language_korean">한국어</string>
 
@@ -1126,6 +1127,10 @@
     <string name="channels_expiry_format">Expires: %1$s</string>
     <string name="channels_search_placeholder">Search channels…</string>
     <string name="chat_attach_file">Attach file</string>
+    <string name="chat_attach_image">Choose from gallery</string>
+    <string name="chat_attach_camera">Take photo</string>
+    <string name="chat_attach_document">Choose document</string>
+    <string name="chat_composer_hint">Message…</string>
     <string name="chat_save_attachment">Save %1$s</string>
     <string name="chat_switch_model_title">Switch model (this chat)</string>
     <string name="config_clear_value">Clear value</string>

@@ -143,18 +143,24 @@ fun MarkdownText(
                             5 -> 15.sp
                             else -> 14.sp
                         }
+                    val topPad = if (block.level <= 2) 10.dp else 6.dp
+                    val bottomPad = 4.dp
                     MarkdownInlineText(
                         text = block.text,
                         textColor = textColor,
                         latexMeasurer = latexMeasurer,
                         style =
                             MaterialTheme.typography.bodyMedium
-                                .copy(fontSize = fontSize, fontWeight = FontWeight.Bold),
+                                .copy(
+                                    fontSize = fontSize,
+                                    fontWeight = FontWeight.Bold,
+                                    lineHeight = (fontSize.value * 1.25f).sp,
+                                ),
                         searchQuery = searchQuery,
                         isCurrentMatch = isCurrentMatch,
                         linkColor = linkColor,
                         highlights = highlights,
-                        modifier = Modifier.padding(vertical = 2.dp),
+                        modifier = Modifier.padding(top = topPad, bottom = bottomPad),
                     )
                 }
 
@@ -268,7 +274,13 @@ fun MarkdownText(
 
                 is MdBlock.Quote -> {
                     Row(
-                        modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min).padding(vertical = 2.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(IntrinsicSize.Min)
+                            .padding(vertical = 4.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(textColor.copy(alpha = 0.06f))
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Box(
@@ -277,14 +289,16 @@ fun MarkdownText(
                                     .width(3.dp)
                                     .fillMaxHeight()
                                     .clip(RoundedCornerShape(2.dp))
-                                    .background(textColor.copy(alpha = 0.35f)),
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)),
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
                         MarkdownInlineText(
                             text = block.text,
-                            textColor = textColor,
+                            textColor = textColor.copy(alpha = 0.9f),
                             latexMeasurer = latexMeasurer,
-                            style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic),
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontStyle = FontStyle.Italic,
+                            ),
                             searchQuery = searchQuery,
                             isCurrentMatch = isCurrentMatch,
                             linkColor = linkColor,
@@ -528,6 +542,11 @@ private fun MarkdownTable(
 ) {
     val headerBg = textColor.copy(alpha = 0.08f)
     val alignments = block.alignments
+    // Use the theme's primary as the link color so inline links inside
+    // table cells stay legible; everything else inherits the table's
+    // textColor so we don't fight the surrounding bubble.
+    val linkColor = MaterialTheme.colorScheme.primary
+    val highlights = searchHighlightColors(LocalHermesStatusColors.current)
     Column(
         modifier =
             Modifier
@@ -535,11 +554,19 @@ private fun MarkdownTable(
                 .horizontalScroll(rememberScrollState())
                 .padding(vertical = 4.dp),
     ) {
-        // Header row
+        // Header row — bold + parse inline markdown so headings, code, and
+        // links inside header cells still render properly.
         Row(modifier = Modifier.background(headerBg)) {
             block.header.forEachIndexed { idx, cell ->
                 Text(
-                    text = cell,
+                    text = parseInline(
+                        text = cell,
+                        textColor = textColor,
+                        searchQuery = "",
+                        isCurrentMatch = false,
+                        linkColor = linkColor,
+                        highlights = highlights,
+                    ),
                     textAlign = tableTextAlign(alignments.getOrNull(idx)),
                     color = textColor,
                     style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
@@ -551,12 +578,20 @@ private fun MarkdownTable(
             }
         }
         HorizontalDivider(color = textColor.copy(alpha = 0.25f))
-        // Body rows
+        // Body rows — apply inline markdown so `code`, **bold**, *italic*,
+        // [links] and $math$ work inside table cells.
         block.rows.forEach { row ->
             Row {
                 row.forEachIndexed { idx, cell ->
                     Text(
-                        text = cell,
+                        text = parseInline(
+                            text = cell,
+                            textColor = textColor,
+                            searchQuery = "",
+                            isCurrentMatch = false,
+                            linkColor = linkColor,
+                            highlights = highlights,
+                        ),
                         textAlign = tableTextAlign(alignments.getOrNull(idx)),
                         color = textColor,
                         style = MaterialTheme.typography.bodySmall,

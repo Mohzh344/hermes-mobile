@@ -283,7 +283,10 @@ jobs:
           disable-animations: true
           force-avd-creation: false
           emulator-options: -no-window -no-audio -no-boot-anim -camera-back none -memory 2048
-          script: ./gradlew connectedDebugAndroidTest --no-daemon
+          # The runner is x86_64, so the AVD can only run x86_64 APKs.
+          # arm64-only APKs (the default for release) won't install here,
+          # hence the explicit -Parm64Only=false override.
+          script: ./gradlew connectedDebugAndroidTest --no-daemon -Parm64Only=false
 
       - name: Upload instrumented test reports
         if: always()
