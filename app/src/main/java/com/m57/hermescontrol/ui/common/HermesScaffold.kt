@@ -191,63 +191,62 @@ fun HermesScaffold(
         snackbarHost = { snackbarHost() },
         topBar = {
             if (floatingTopBar) {
-                // Floating glass pill: full-bleed on top, then status-bar
-                // padding, then 8dp of empty space, then the actual pill.
+                // Floating bar (no background): just a transparent row
+                // sitting at the top of the screen so the title + nav
+                // icon + actions stay readable. We *deliberately* do
+                // not paint a scrim here — a dark glass strip would
+                // hover over the content and eat a third of the
+                // viewport on tall screens. The user can opt in to a
+                // glass surface via the new `topBarSurface` param.
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .statusBarsPadding()
-                        .padding(top = 8.dp, start = 12.dp, end = 12.dp),
+                        .padding(top = 4.dp, start = 4.dp, end = 4.dp),
                 ) {
-                    GlassSurface(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        paddingValues = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            // Navigation icon column
-                            when (val icon = navigationIcon) {
-                                is NavIcon.Back -> {
-                                    IconButton(onClick = icon.onBack) {
-                                        Icon(
-                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                            contentDescription = stringResource(R.string.content_desc_back),
-                                            modifier = Modifier.testTag("back_button"),
-                                        )
-                                    }
-                                }
-
-                                is NavIcon.Menu -> {
-                                    IconButton(onClick = icon.onOpen) {
-                                        Icon(
-                                            imageVector = Icons.Filled.Menu,
-                                            contentDescription = stringResource(R.string.content_desc_open_drawer),
-                                            modifier = Modifier.testTag("menu_button"),
-                                        )
-                                    }
-                                }
-
-                                null -> { /* no navigation icon */ }
-                            }
-                            // Title (weight 1f)
-                            Box(modifier = Modifier.weight(1f)) {
-                                title()
-                            }
-                            // Trailing actions
-                            if (onRefresh != null) {
-                                IconButton(onClick = onRefresh) {
+                        // Navigation icon column
+                        when (val icon = navigationIcon) {
+                            is NavIcon.Back -> {
+                                IconButton(onClick = icon.onBack) {
                                     Icon(
-                                        imageVector = Icons.Filled.Refresh,
-                                        contentDescription = stringResource(R.string.content_desc_refresh),
-                                        modifier = Modifier.testTag("refresh_button"),
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = stringResource(R.string.content_desc_back),
+                                        modifier = Modifier.testTag("back_button"),
                                     )
                                 }
                             }
-                            actions()
+
+                            is NavIcon.Menu -> {
+                                IconButton(onClick = icon.onOpen) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Menu,
+                                        contentDescription = stringResource(R.string.content_desc_open_drawer),
+                                        modifier = Modifier.testTag("menu_button"),
+                                    )
+                                }
+                            }
+
+                            null -> { /* no navigation icon */ }
                         }
+                        // Title (weight 1f)
+                        Box(modifier = Modifier.weight(1f)) {
+                            title()
+                        }
+                        // Trailing actions
+                        if (onRefresh != null) {
+                            IconButton(onClick = onRefresh) {
+                                Icon(
+                                    imageVector = Icons.Filled.Refresh,
+                                    contentDescription = stringResource(R.string.content_desc_refresh),
+                                    modifier = Modifier.testTag("refresh_button"),
+                                )
+                            }
+                        }
+                        actions()
                     }
                 }
             } else {
@@ -311,7 +310,10 @@ fun HermesScaffold(
         // content area has to start below it.
         val floatingTopGap =
             if (floatingTopBar) {
-                64.dp
+                // status bar (~24dp on most phones) + 4dp gap + ~40dp bar =
+                // ~68dp total. The bar is now a transparent Row, so the
+                // content can sit right under it without being covered.
+                56.dp
             } else {
                 0.dp
             }
