@@ -68,8 +68,12 @@ jobs:
           echo "Release: tag=$TAG version=$VERSION code=$CODE prerelease=$PRERELEASE"
 
       - name: Decode release keystore (with debug fallback)
+        id: keystore_creds
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           set -e
           if [ -n "$KEYSTORE_BASE64" ]; then
@@ -83,6 +87,9 @@ jobs:
                  -storepass "${KEYSTORE_PASSWORD}" -alias "${KEY_ALIAS}" >/dev/null 2>&1; then
               echo "::notice::Release keystore OK"
               echo "::endgroup::"
+              echo "keystore_password=${KEYSTORE_PASSWORD}" >> "$GITHUB_OUTPUT"
+              echo "key_alias=${KEY_ALIAS}" >> "$GITHUB_OUTPUT"
+              echo "key_password=${KEY_PASSWORD}" >> "$GITHUB_OUTPUT"
               exit 0
             else
               echo "::warning::Release keystore secret is corrupt or missing alias; falling back to debug keystore"
@@ -111,10 +118,14 @@ jobs:
           ls -lh hermes-mobile-release.keystore.jks
           echo "::notice::Generated debug keystore (alias=androiddebugkey, storepass=android, keypass=android)"
           echo "::endgroup::"
-        env:
-          KEYSTORE_PASSWORD: android
-          KEY_ALIAS: androiddebugkey
-          KEY_PASSWORD: android
+          # Persist the keystore credentials as step outputs so the
+          # next step can pick them up. Defaults to the debug-keystore
+          # values above; if the real keystore was decoded earlier the
+          # environment variables it was already set with would still
+          # be in scope.
+          echo "keystore_password=android" >> "$GITHUB_OUTPUT"
+          echo "key_alias=androiddebugkey" >> "$GITHUB_OUTPUT"
+          echo "key_password=android" >> "$GITHUB_OUTPUT"
 
       - name: Build Release APK
         env:
@@ -124,9 +135,9 @@ jobs:
           # path with a known alias/password, so the Gradle env vars
           # are unconditional.
           KEYSTORE_PATH: ${{ github.workspace }}/hermes-mobile-release.keystore.jks
-          KEYSTORE_PASSWORD: ${{ env.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ env.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ env.KEY_PASSWORD }}
+          KEYSTORE_PASSWORD: ${{ steps.keystore_creds.outputs.keystore_password }}
+          KEY_ALIAS: ${{ steps.keystore_creds.outputs.key_alias }}
+          KEY_PASSWORD: ${{ steps.keystore_creds.outputs.key_password }}
         run: |
           ./gradlew assembleRelease \
             -PversionName="$VERSION_NAME" \
