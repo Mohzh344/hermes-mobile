@@ -141,7 +141,10 @@ fun ChatBubble(
             modifier =
                 modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 2.dp),
+                    // Generous side padding so user bubbles don't glue
+                    // themselves to the screen edge (and never cover text
+                    // that scrolls underneath).
+                    .padding(horizontal = 12.dp, vertical = 3.dp),
             contentAlignment = Alignment.CenterEnd,
         ) {
             val primary = MaterialTheme.colorScheme.primary

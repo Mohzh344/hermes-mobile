@@ -165,15 +165,28 @@ fun HermesScaffold(
     val gestureController = LocalDrawerGestureController.current
     SideEffect { gestureController?.reconcile(drawerGesturesEnabled) }
 
+    // In floating mode the top bar is a Box overlay (not a Material3
+    // TopAppBar), so it has no heightOffset / nestedScroll to push down
+    // content. Building a real TopAppBarScrollBehavior here would cause
+    // dynamicTopBarPadding to subtract its negative heightOffset on every
+    // scroll — which is the bug that made the list "stop in the middle
+    // and never reach the end" on every screen except Chat.
     val scrollBehavior =
-        if (pinTopBar) {
+        if (floatingTopBar) {
+            null
+        } else if (pinTopBar) {
             TopAppBarDefaults.pinnedScrollBehavior()
         } else {
             TopAppBarDefaults.enterAlwaysScrollBehavior()
         }
 
     Scaffold(
-        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier =
+            if (scrollBehavior != null) {
+                modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+            } else {
+                modifier
+            },
         contentWindowInsets = WindowInsets.navigationBars,
         snackbarHost = { snackbarHost() },
         topBar = {
@@ -291,17 +304,37 @@ fun HermesScaffold(
         containerColor = MaterialTheme.colorScheme.background,
     ) { paddingValues ->
         val layoutDirection = LocalLayoutDirection.current
+        // Reserve room for the floating top bar at the top of the content
+        // (status bar + 8dp gap + ~48dp bar + 8dp breathing room). Without
+        // this, the content would scroll under the floating bar — the bar
+        // is rendered as the first item inside the Box above, so the
+        // content area has to start below it.
+        val floatingTopGap =
+            if (floatingTopBar) {
+                64.dp
+            } else {
+                0.dp
+            }
         val refreshContent: @Composable () -> Unit = {
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(
-                            start = paddingValues.calculateStartPadding(layoutDirection),
-                            end = paddingValues.calculateEndPadding(layoutDirection),
-                            bottom = paddingValues.calculateBottomPadding(),
-                        ).dynamicTopBarPadding(scrollBehavior, paddingValues.calculateTopPadding()),
-            ) {
+            val baseModifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(
+                        start = paddingValues.calculateStartPadding(layoutDirection),
+                        end = paddingValues.calculateEndPadding(layoutDirection),
+                        top = paddingValues.calculateTopPadding() + floatingTopGap,
+                        bottom = paddingValues.calculateBottomPadding(),
+                    )
+            val withScroll =
+                if (scrollBehavior != null) {
+                    baseModifier.dynamicTopBarPadding(
+                        scrollBehavior,
+                        paddingValues.calculateTopPadding(),
+                    )
+                } else {
+                    baseModifier
+                }
+            Box(modifier = withScroll) {
                 content(paddingValues)
             }
         }
