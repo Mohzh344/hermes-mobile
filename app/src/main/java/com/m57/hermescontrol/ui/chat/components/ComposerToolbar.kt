@@ -9,12 +9,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -38,7 +44,11 @@ import com.m57.hermescontrol.R
 /**
  * Bottom toolbar row for the chat composer.
  *
- * Layout: [📎 attach] [model chip] [←spacer→] [🧠 reasoning] [🎙 mic]
+ * Layout: [+ button] [model chip] [←spacer→] [🧠 reasoning] [🎙 mic]
+ *
+ * The "+" button is a circular filled icon that opens a small attachment
+ * menu (image / camera / file / gallery) replacing the old paperclip
+ * icon. Cleaner visual, more familiar mobile UX.
  *
  * The reasoning chip opens a dropdown menu to pick a level (instead of cycling).
  * When [canDisableReasoning] is false the "None" level is disabled with a
@@ -57,11 +67,15 @@ fun ComposerToolbar(
     onModelTap: () -> Unit,
     onReasoningSelected: (String?) -> Unit,
     onMicTap: () -> Unit,
+    onCameraTap: (() -> Unit)? = null,
+    onGalleryTap: (() -> Unit)? = null,
+    onFileTap: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     canDisableReasoning: Boolean? = null,
     supportsReasoning: Boolean? = null,
 ) {
     var showReasoningMenu by remember { mutableStateOf(false) }
+    var showAttachMenu by remember { mutableStateOf(false) }
     val reasoningDisabledForModel = supportsReasoning == false
     val canDisable = canDisableReasoning
 
@@ -74,17 +88,80 @@ fun ComposerToolbar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        // Attach button
-        IconButton(
-            onClick = onAttachTap,
-            enabled = isConnected,
-            modifier = Modifier.size(36.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Default.AttachFile,
-                contentDescription = stringResource(R.string.chat_attach_file),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        // + Button (replaces old paperclip). When tapped, opens a small
+        // attachment dropdown. The dropdown keeps backwards compatibility
+        // (calls onAttachTap if no specialized handlers are provided).
+        Box {
+            FilledIconButton(
+                onClick = {
+                    // If no specialized menu items are provided, fall back
+                    // to the original single-attach behavior so older hosts
+                    // still work as expected.
+                    if (onCameraTap == null && onGalleryTap == null && onFileTap == null) {
+                        onAttachTap()
+                    } else {
+                        showAttachMenu = true
+                    }
+                },
+                enabled = isConnected,
+                shape = CircleShape,
+                modifier = Modifier
+                    .size(36.dp)
+                    .testTag("composer_plus_button"),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = stringResource(R.string.chat_attach_file),
+                )
+            }
+            if (showAttachMenu) {
+                DropdownMenu(
+                    expanded = showAttachMenu,
+                    onDismissRequest = { showAttachMenu = false },
+                ) {
+                    onFileTap?.let {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.chat_attach_file)) },
+                            leadingIcon = { Icon(Icons.Default.Description, contentDescription = null) },
+                            onClick = {
+                                showAttachMenu = false
+                                it()
+                            },
+                        )
+                    }
+                    onGalleryTap?.let {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.chat_attach_image)) },
+                            leadingIcon = { Icon(Icons.Default.PhotoLibrary, contentDescription = null) },
+                            onClick = {
+                                showAttachMenu = false
+                                it()
+                            },
+                        )
+                    }
+                    onCameraTap?.let {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.chat_attach_camera)) },
+                            leadingIcon = { Icon(Icons.Default.CameraAlt, contentDescription = null) },
+                            onClick = {
+                                showAttachMenu = false
+                                it()
+                            },
+                        )
+                    }
+                    // If only legacy onAttachTap was given, show a single entry.
+                    if (onCameraTap == null && onGalleryTap == null && onFileTap == null) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.chat_attach_file)) },
+                            leadingIcon = { Icon(Icons.Default.Description, contentDescription = null) },
+                            onClick = {
+                                showAttachMenu = false
+                                onAttachTap()
+                            },
+                        )
+                    }
+                }
+            }
         }
 
         // Model chip — takes available space, fixed height

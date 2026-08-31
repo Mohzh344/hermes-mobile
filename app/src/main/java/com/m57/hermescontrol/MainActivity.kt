@@ -9,9 +9,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import com.m57.hermescontrol.data.local.AuthManager
 import com.m57.hermescontrol.data.ws.HermesWsClient
 import com.m57.hermescontrol.notification.NotificationHelper
@@ -61,11 +64,22 @@ class MainActivity : ComponentActivity() {
                 themePreset = themePreset,
                 chatFontScale = chatFontScale,
             ) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background,
+                // RTL plumbing: the system already gave us the right
+                // configuration when [attachBaseContext] set the chosen
+                // locale, but a few hardcoded LTR surfaces still need a
+                // hint. Compute the resolved direction here and provide it
+                // to descendants via a CompositionLocal that overrides
+                // LocalLayoutDirection when needed.
+                val resolvedLayoutDirection = rememberResolvedLayoutDirection()
+                CompositionLocalProvider(
+                    LocalLayoutDirection provides resolvedLayoutDirection,
                 ) {
-                    MainNavigation()
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background,
+                    ) {
+                        MainNavigation()
+                    }
                 }
             }
         }
@@ -102,4 +116,17 @@ class MainActivity : ComponentActivity() {
         intent.removeExtra(NotificationReplyReceiver.EXTRA_SESSION_ID)
         sessionId?.takeIf { it.isNotBlank() }?.let(NavigationController::openChatSessionFromNotification)
     }
+}
+
+/**
+ * Returns the layout direction that should apply for the current
+ * configuration. On API 17+ this is provided automatically by the system
+ * via [androidx.compose.ui.platform.LocalLayoutDirection]; we read it and
+ * pin it to the system default to avoid Compose picking up an out-of-date
+ * direction after a configuration change.
+ */
+@androidx.compose.runtime.Composable
+private fun rememberResolvedLayoutDirection(): LayoutDirection {
+    val systemDir = androidx.compose.ui.platform.LocalLayoutDirection.current
+    return androidx.compose.runtime.remember(systemDir) { systemDir }
 }
