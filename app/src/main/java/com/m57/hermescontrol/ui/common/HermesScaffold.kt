@@ -154,39 +154,34 @@ fun HermesScaffold(
     actions: @Composable () -> Unit = {},
     /**
      * When true, the top bar renders as a floating glass pill that sits
-     * slightly below the system status bar (issue: avoid the front camera /
-     * OS clock). When false, the original TopAppBar is used.
+     * slightly below the system status bar. When false, the original
+     * Material3 TopAppBar is used (pinned / enterAlways, scrolls with
+     * the content).
      *
-     * Default: true (floating mode is the new default since v1.26).
+     * Default: false (reverted to the original TopAppBar — the floating
+     * glass pill on top of every screen was too tall and ate a third of
+     * the viewport on phones, so we're back to the standard top app bar
+     * that respects Material3's enterAlways/pinned scroll behavior).
      */
-    floatingTopBar: Boolean = true,
+    floatingTopBar: Boolean = false,
     content: @Composable (PaddingValues) -> Unit,
 ) {
     val gestureController = LocalDrawerGestureController.current
     SideEffect { gestureController?.reconcile(drawerGesturesEnabled) }
 
-    // In floating mode the top bar is a Box overlay (not a Material3
-    // TopAppBar), so it has no heightOffset / nestedScroll to push down
-    // content. Building a real TopAppBarScrollBehavior here would cause
-    // dynamicTopBarPadding to subtract its negative heightOffset on every
-    // scroll — which is the bug that made the list "stop in the middle
-    // and never reach the end" on every screen except Chat.
+    // Standard Material3 TopAppBar scroll behavior:
+    //   - pinnedScrollBehavior:   bar stays at full size, never collapses
+    //   - enterAlwaysScrollBehavior: bar collapses when scrolling down,
+    //                                expands when scrolling up
     val scrollBehavior =
-        if (floatingTopBar) {
-            null
-        } else if (pinTopBar) {
+        if (pinTopBar) {
             TopAppBarDefaults.pinnedScrollBehavior()
         } else {
             TopAppBarDefaults.enterAlwaysScrollBehavior()
         }
 
     Scaffold(
-        modifier =
-            if (scrollBehavior != null) {
-                modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
-            } else {
-                modifier
-            },
+        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         contentWindowInsets = WindowInsets.navigationBars,
         snackbarHost = { snackbarHost() },
         topBar = {
@@ -310,9 +305,9 @@ fun HermesScaffold(
         // content area has to start below it.
         val floatingTopGap =
             if (floatingTopBar) {
-                // status bar (~24dp on most phones) + 4dp gap + ~40dp bar =
-                // ~68dp total. The bar is now a transparent Row, so the
-                // content can sit right under it without being covered.
+                // Only when a custom floating bar is in use do we need
+                // to manually reserve space for it. With the default
+                // TopAppBar path, Scaffold already handles the insets.
                 56.dp
             } else {
                 0.dp
@@ -362,18 +357,29 @@ private fun Modifier.dynamicTopBarPadding(
 ): Modifier =
     this.layout { measurable, constraints ->
         val baseTopPaddingPx = baseTopPadding.roundToPx()
+        // heightOffset goes from 0 (expanded) to a negative value as the
+        // user scrolls down (the bar collapses). We want the *extra*
+        // padding we add to shrink accordingly so the content can move
+        // up and the user can reach the very bottom of the list.
         val heightOffset = scrollBehavior.state.heightOffset.roundToInt()
-        val activeTopPadding = (baseTopPaddingPx + heightOffset).coerceAtLeast(0)
-
+        val extraTopPadding = (baseTopPaddingPx + heightOffset).coerceAtLeast(0)
+        // Total top padding = what the Scaffold gave us + the extra
+        // we're reserving here. Place content at that offset and use
+        // the remaining height for measurement so the LazyColumn never
+        // gets more vertical space than fits on screen.
         val placeable =
             measurable.measure(
                 constraints.copy(
-                    maxHeight = (constraints.maxHeight - activeTopPadding).coerceAtLeast(0),
-                    minHeight = (constraints.minHeight - activeTopPadding).coerceAtLeast(0),
+                    maxHeight = (constraints.maxHeight - extraTopPadding).coerceAtLeast(0),
+                    minHeight = (constraints.minHeight - extraTopPadding).coerceAtLeast(0),
                 ),
             )
-
-        layout(placeable.width, placeable.height + activeTopPadding) {
-            placeable.placeRelative(0, activeTopPadding)
+        // The reported layout size is what the placeable actually
+        // measured, plus the extra top padding we reserved — this keeps
+        // the parent layout from giving us more height than the
+        // visible area, which is the bug that made LazyColumn stop
+        // mid-list on every screen.
+        layout(constraints.maxWidth, placeable.height + extraTopPadding) {
+            placeable.placeRelative(0, extraTopPadding)
         }
     }
