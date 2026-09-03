@@ -34,6 +34,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -42,6 +43,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,11 +54,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
@@ -68,6 +74,7 @@ import com.m57.hermescontrol.data.ws.CommandCatalog
 import com.m57.hermescontrol.ui.chat.ChatInputPolicy
 import com.m57.hermescontrol.ui.common.BotAvatar
 import com.m57.hermescontrol.ui.common.GlassSurface
+import com.m57.hermescontrol.util.BidiUtils
 
 /**
  * The chat input bar with a two-row layout: input+send on top,
@@ -105,9 +112,8 @@ fun ChatInputBar(
     // dropped. Slash commands were already allowed; regular prompts now are too.
     val canSend = ChatInputPolicy.canSend(inputFieldValue.text, pendingAttachments, isConnected)
 
-    // Attachment menu state — the ComposerToolbar's own + menu (v1.26)
-    // replaces the legacy dropdown that used to live here, so we no longer
-    // need a state variable for it.
+    // Attachment menu state
+    var showAttachmentMenu by remember { mutableStateOf(false) }
     var isFocused by remember { mutableStateOf(false) }
 
     AnimatedVisibility(
@@ -319,91 +325,129 @@ fun ChatInputBar(
                             }
                         }
 
-                    BasicTextField(
-                        value = inputFieldValue,
-                        onValueChange = onInputChange,
-                        modifier =
-                            Modifier
-                                .weight(1f)
-                                .heightIn(min = 42.dp, max = 120.dp)
-                                .padding(vertical = 4.dp)
-                                .onFocusChanged { isFocused = it.isFocused }
-                                .testTag("chat_input"),
-                        enabled = isConnected,
-                        textStyle =
-                            MaterialTheme.typography.bodyMedium.copy(
-                                color = MaterialTheme.colorScheme.onSurface,
-                            ),
-                        singleLine = false,
-                        maxLines = 4,
-                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                        decorationBox = { innerTextField ->
-                            Surface(
-                                shape = RoundedCornerShape(18.dp),
-                                border =
-                                    BorderStroke(
-                                        width = if (isFocused) 2.dp else 1.dp,
-                                        color =
-                                            if (isFocused) {
-                                                MaterialTheme.colorScheme.primary
-                                            } else {
-                                                MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                                            },
-                                    ),
-                                color = MaterialTheme.colorScheme.surface,
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                Row(
-                                    modifier =
-                                        Modifier
-                                            .padding(start = 12.dp, end = 4.dp, top = 9.dp, bottom = 9.dp)
-                                            .fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Box(modifier = Modifier.weight(1f)) {
-                                        if (inputFieldValue.text.isEmpty()) {
-                                            Text(
-                                                text = placeholderText,
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                            )
-                                        }
-                                        innerTextField()
-                                    }
+                    val ambientLayoutDirection = LocalLayoutDirection.current
+                    val inputLayoutDirection =
+                        remember(inputFieldValue.text, ambientLayoutDirection) {
+                            BidiUtils.resolveLayoutDirection(inputFieldValue.text, fallback = ambientLayoutDirection)
+                        }
+                    val isInputRtl = inputLayoutDirection == LayoutDirection.Rtl
 
-                                    // Send button INSIDE the field. Shown whenever a send is
-                                    // possible — text typed OR an attachment pending (issue
-                                    // #956): the old text-only gate hid the button entirely
-                                    // for attachment-only sends.
-                                    AnimatedContent(
-                                        targetState = canSend,
-                                        transitionSpec = {
-                                            (scaleIn(initialScale = 0.8f) + fadeIn())
-                                                .togetherWith(scaleOut(targetScale = 0.8f) + fadeOut())
-                                        },
-                                        label = "send_toggle",
-                                    ) { showSend ->
-                                        if (showSend) {
-                                            IconButton(
-                                                onClick = onSend,
-                                                enabled = canSend,
-                                                colors = IconButtonDefaults.filledTonalIconButtonColors(),
-                                                modifier =
-                                                    Modifier
-                                                        .size(36.dp)
-                                                        .testTag("send_button"),
+                    CompositionLocalProvider(LocalLayoutDirection provides inputLayoutDirection) {
+                        BasicTextField(
+                            value = inputFieldValue,
+                            onValueChange = onInputChange,
+                            modifier =
+                                Modifier
+                                    .weight(1f)
+                                    .heightIn(min = 42.dp, max = 120.dp)
+                                    .padding(vertical = 4.dp)
+                                    .onFocusChanged { isFocused = it.isFocused }
+                                    .testTag("chat_input"),
+                            enabled = isConnected,
+                            textStyle =
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    textAlign = if (isInputRtl) TextAlign.Right else TextAlign.Left,
+                                    textDirection = if (isInputRtl) TextDirection.Rtl else TextDirection.Ltr,
+                                ),
+                            singleLine = false,
+                            maxLines = 4,
+                            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                            decorationBox = { innerTextField ->
+                                CompositionLocalProvider(LocalLayoutDirection provides ambientLayoutDirection) {
+                                    Surface(
+                                        shape = RoundedCornerShape(18.dp),
+                                        border =
+                                            BorderStroke(
+                                                width = if (isFocused) 2.dp else 1.dp,
+                                                color =
+                                                    if (isFocused) {
+                                                        MaterialTheme.colorScheme.primary
+                                                    } else {
+                                                        MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                                                    },
+                                            ),
+                                        color = MaterialTheme.colorScheme.surface,
+                                        modifier = Modifier.fillMaxWidth(),
+                                    ) {
+                                        Row(
+                                            modifier =
+                                                Modifier
+                                                    .padding(start = 12.dp, end = 4.dp, top = 9.dp, bottom = 9.dp)
+                                                    .fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            Box(
+                                                modifier = Modifier.weight(1f),
+                                                contentAlignment =
+                                                    if (isInputRtl) {
+                                                        Alignment.CenterEnd
+                                                    } else {
+                                                        Alignment.CenterStart
+                                                    },
                                             ) {
-                                                Icon(
-                                                    imageVector = Icons.AutoMirrored.Filled.Send,
-                                                    contentDescription = stringResource(R.string.chat_send_desc),
-                                                )
+                                                CompositionLocalProvider(
+                                                    LocalLayoutDirection provides inputLayoutDirection,
+                                                ) {
+                                                    if (inputFieldValue.text.isEmpty()) {
+                                                        Text(
+                                                            text = placeholderText,
+                                                            style = MaterialTheme.typography.bodyMedium,
+                                                            textAlign =
+                                                                if (isInputRtl) {
+                                                                    TextAlign.Right
+                                                                } else {
+                                                                    TextAlign.Left
+                                                                },
+                                                            color =
+                                                                MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                                                    alpha = 0.6f,
+                                                                ),
+                                                            modifier = Modifier.fillMaxWidth(),
+                                                        )
+                                                    }
+                                                    innerTextField()
+                                                }
+                                            }
+
+                                            // Send button INSIDE the field. Shown whenever a send is
+                                            // possible — text typed OR an attachment pending (issue
+                                            // #956): the old text-only gate hid the button entirely
+                                            // for attachment-only sends.
+                                            AnimatedContent(
+                                                targetState = canSend,
+                                                transitionSpec = {
+                                                    (scaleIn(initialScale = 0.8f) + fadeIn())
+                                                        .togetherWith(scaleOut(targetScale = 0.8f) + fadeOut())
+                                                },
+                                                label = "send_toggle",
+                                            ) { showSend ->
+                                                if (showSend) {
+                                                    IconButton(
+                                                        onClick = onSend,
+                                                        enabled = canSend,
+                                                        colors = IconButtonDefaults.filledTonalIconButtonColors(),
+                                                        modifier =
+                                                            Modifier
+                                                                .size(36.dp)
+                                                                .testTag("send_button"),
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = Icons.AutoMirrored.Filled.Send,
+                                                            contentDescription =
+                                                                stringResource(
+                                                                    R.string.chat_send_desc,
+                                                                ),
+                                                        )
+                                                    }
+                                                }
                                             }
                                         }
                                     }
                                 }
-                            }
-                        },
-                    )
+                            },
+                        )
+                    }
                 }
 
                 // ── BOTTOM ROW: Toolbar ──
@@ -412,21 +456,61 @@ fun ChatInputBar(
                     currentSessionModel = currentSessionModel,
                     reasoningLevel = reasoningLevel,
                     isListening = isListening,
-                    onAttachTap = onFileTap,
+                    onAttachTap = { showAttachmentMenu = true },
                     onModelTap = onModelTap,
                     onReasoningSelected = onReasoningTap,
                     onMicTap = onMicTap,
-                    onCameraTap = onCameraTap,
-                    onGalleryTap = onImageTap,
-                    onFileTap = onFileTap,
                     modifier = Modifier.testTag("chat_composer_toolbar"),
                     canDisableReasoning = canDisableReasoning,
                     supportsReasoning = supportsReasoning,
                 )
-                // The legacy attachment dropdown above was removed in v1.26:
-                // the ComposerToolbar now owns its own + menu with proper
-                // Material icons. [showAttachmentMenu] is kept as a
-                // no-op state in case a downstream caller still flips it.
+
+                // Attachment dropdown (anchored to the attach button in ComposerToolbar)
+                // Shown overlaid at the toolbar level
+                DropdownMenu(
+                    expanded = showAttachmentMenu,
+                    onDismissRequest = { showAttachmentMenu = false },
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Camera") },
+                        onClick = {
+                            showAttachmentMenu = false
+                            onCameraTap()
+                        },
+                        leadingIcon = {
+                            Text(
+                                text = "📷",
+                                fontSize = 18.sp,
+                            )
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Image") },
+                        onClick = {
+                            showAttachmentMenu = false
+                            onImageTap()
+                        },
+                        leadingIcon = {
+                            Text(
+                                text = "🖼️",
+                                fontSize = 18.sp,
+                            )
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text("File") },
+                        onClick = {
+                            showAttachmentMenu = false
+                            onFileTap()
+                        },
+                        leadingIcon = {
+                            Text(
+                                text = "📄",
+                                fontSize = 18.sp,
+                            )
+                        },
+                    )
+                }
             }
         }
     }
